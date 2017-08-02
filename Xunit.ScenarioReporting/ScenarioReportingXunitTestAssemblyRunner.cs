@@ -42,7 +42,8 @@ namespace Xunit.ScenarioReporting
                 }
                 var path = GetOutputPath(TestAssembly.Assembly.AssemblyPath, TestAssembly.ConfigFileName);
                 
-                _scenarioReport = new ScenarioReport(name, new MarkdownWriter(path, name));
+                //_scenarioReport = new ScenarioReport(name, new MarkdownWriter(path, name));
+                _scenarioReport = new ScenarioReport(name, new ReportWriter(path, name));
             });
         }
         class NullWriter : IReportWriter {

@@ -59,6 +59,7 @@
     <Compile Include="EndReport.cs" />
     <Compile Include="EndScenario.cs" />
     <Compile Include="ExceptionExtensions.cs" />
+    <Compile Include="ReportWriter.cs" />
     <Compile Include="ScenarioFactAttributeDiscoverer.cs" />
     <Compile Include="ScenarioReportingXunitTestFrameworkDiscoverer.cs" />
     <Compile Include="ScenarioTheoryAttributeDiscoverer.cs" />
@@ -91,6 +92,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Reports\ReportAssemblyOverviewHTMLContent.xslt" />
+    <EmbeddedResource Include="Reports\ReportAssemblyOverviewHTMLFooter.html" />
+    <EmbeddedResource Include="Reports\ReportAssemblyOverviewHTMLHeader.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
