@@ -11,7 +11,7 @@
 		<p><xsl:value-of select="$cntScenario" /> Scenario(s):</p>
 		<xsl:if test="$cntScenario = 0">
 			<p>[There are no scenarios.]</p>
-        </xsl:if>
+    </xsl:if>
 		
 		<xsl:if test="$cntScenario > 0">
 			<ul>
@@ -22,7 +22,7 @@
 					</li>
 				</xsl:for-each>
 			</ul>
-        </xsl:if>
+    </xsl:if>
 		
 		</div><!--report-header-->
 
@@ -30,7 +30,7 @@
 
 			<xsl:for-each select="Assembly/Scenario">
 
-                <section class="section-scenario">
+        <section class="section-scenario">
 				<h3><a name="{generate-id(Name)}">Scenario</a></h3>
 				<p>Name: <xsl:value-of select="Name"/></p>
 
@@ -44,12 +44,13 @@
 				<xsl:otherwise>
 					<xsl:for-each select="Given">
 						<div class="section-given">
-						<p>Title: <xsl:value-of select="Title"/></p>
+						<p><xsl:value-of select="Title"/></p><!--Title-->
 						<xsl:if test="Detail != ''" >
-							<p>Message: <xsl:value-of select="Detail"/> </p>
+							<p><xsl:for-each select="Detail/Message"><xsl:value-of select="concat(., ' ')"/></xsl:for-each ></p><!--Message-->
 						</xsl:if>						
 						</div><!--section-given-->
-					</xsl:for-each >
+            <!--<xsl:if test="position() != last()"> [and] </xsl:if>-->
+          </xsl:for-each >
 				</xsl:otherwise>
 				</xsl:choose>
 				</div><!--section-givens-->
@@ -64,9 +65,9 @@
 				<xsl:otherwise>
 					<xsl:for-each select="When">
 						<div class="section-when">
-						<p>Title: <xsl:value-of select="Title"/></p>
+						<p><xsl:value-of select="Title"/></p><!--Title-->
 						<xsl:if test="Detail != ''" >
-							<p>Message: <xsl:value-of select="Detail"/> </p>
+							<p><xsl:for-each select="Detail/Message"><xsl:value-of select="concat(., ' ')"/></xsl:for-each ></p><!--Message-->
 						</xsl:if>						
 						</div><!--section-when-->
 					</xsl:for-each >				
@@ -84,9 +85,9 @@
 				<xsl:otherwise>
 					<xsl:for-each select="Then">
 						<div class="section-then">					
-						<p>Title: <xsl:value-of select="Title"/></p>
+						<p><xsl:value-of select="Title"/></p><!--Title-->
 						<xsl:if test="Detail != ''" >
-							<p>Message: <xsl:value-of select="Detail"/> </p>
+							<p><xsl:for-each select="Detail/Message"><xsl:value-of select="concat(., ' ')"/></xsl:for-each ></p><!--Message-->
 						</xsl:if>						
 						</div><!--section-then-->
 					</xsl:for-each >
@@ -94,8 +95,8 @@
 				</xsl:choose>
 				</div><!--section-thens-->
 				<p><a href="#top">Back to top</a></p>
-                </section><!--section-scenario-->
-            </xsl:for-each>
+        </section><!--section-scenario-->
+    </xsl:for-each>
 
 		</div><!--report-body-->
 		</div><!--report-assembly-->

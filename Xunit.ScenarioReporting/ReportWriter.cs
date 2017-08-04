@@ -46,6 +46,31 @@ namespace Xunit.ScenarioReporting
             _xw = XmlWriter.Create(_sw, xws);
         }
 
+        private async Task WriteMarkdown()
+        {
+            string reportBaseFile = Path.Combine(_path, Path.ChangeExtension(_name, ".xml"));
+            if (File.Exists(reportBaseFile))
+            {
+                Assembly assembly = Assembly.GetExecutingAssembly();
+
+                //prep needed report components
+                Stream sReportContent = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + ReportPath + "." + ReportAssemblyOverviewMarkdownContent);
+                XmlReader xrReportContent = XmlReader.Create(sReportContent);
+                XslCompiledTransform xctReportContent = new XslCompiledTransform();
+                xctReportContent.Load(xrReportContent);
+
+                //generate report
+                Stream sReportOutput = new FileStream(Path.Combine(_path, ReportAssemblyOverviewMarkdown), FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
+
+                xctReportContent.Transform(reportBaseFile, null, sReportOutput);
+
+                sReportOutput.Close();
+                sReportOutput.Dispose();
+
+            }
+
+        }
+
         private async Task WriteHTML()
         {
             string reportBaseFile = Path.Combine(_path, Path.ChangeExtension(_name, ".xml"));
@@ -143,6 +168,7 @@ namespace Xunit.ScenarioReporting
             //await writer.WriteLineAsync($"{H4} Then ");
             //await writer.WriteElementStringAsync(null, XMLTagMessage, null, "**Start Thens");
         }
+        
 
         private static async Task WriteDetails(XmlWriter writer, string title, IReadOnlyList<Scenario.Detail> details)
         {
@@ -157,7 +183,7 @@ namespace Xunit.ScenarioReporting
 
                 if (detail is Scenario.Failure)
                 {
-                    //TODO: This should be an an xml error tag + update xsl and css 
+                    //TODO: This could be an an xml error tag => update xsl and css 
                     //await writer.WriteLineAsync($"{Bold}FAILED {detail.Name}{Bold}");
                     await writer.WriteElementStringAsync(null, XMLTagMessage, null, "FAILED " + " " + detail.Name);
 
@@ -167,7 +193,7 @@ namespace Xunit.ScenarioReporting
                     {
                         //TODO: Not data. Exclude from xml. Should be added to report generators
                         //await writer.WriteAsync($"and ");
-                        await writer.WriteElementStringAsync(null, "Message", null, "and");
+                        //await writer.WriteElementStringAsync(null, "Message", null, "and");
                     }
                     else
                     {
@@ -190,7 +216,7 @@ namespace Xunit.ScenarioReporting
                         //await writer.WriteLineAsync(string.Format(formatString, detail.Value));
                         //TODO: This test case not tested
                         //TODO: {0:{detail.Format}?
-                        //TODO: Might want to output as seperate tagged elements
+                        //TODO: Might want to output as separate tagged elements
                         await writer.WriteElementStringAsync(null, XMLTagMessage, null, detail.Name + " " + string.Format(detail.Format, detail.Value));
                     }
                     else
@@ -227,6 +253,7 @@ namespace Xunit.ScenarioReporting
             _fileStream.Dispose();
 
             await WriteHTML();
+            await WriteMarkdown();
         }
 
         private async Task Additional(XmlWriter writer, ReportItem item)
@@ -235,6 +262,7 @@ namespace Xunit.ScenarioReporting
             //await writer.WriteLineAsync("and");
             //await writer.WriteElementStringAsync(null, XMLTagMessage, null, "**additionally");
         }
+        
 
         public async Task Write(ReportItem item)
         {
@@ -272,6 +300,8 @@ namespace Xunit.ScenarioReporting
         public const string ReportAssemblyOverviewHTMLContent = "ReportAssemblyOverviewHTMLContent.xslt";
         public const string ReportAssemblyOverviewHTMLFooter = "ReportAssemblyOverviewHTMLFooter.html";
         public const string ReportAssemblyOverviewHTML = "ReportAssemblyOverview.html";
+        public const string ReportAssemblyOverviewMarkdownContent = "ReportAssemblyOverviewMarkdownContent.xslt";
+        public const string ReportAssemblyOverviewMarkdown = "ReportAssemblyOverview.md";
         public const string ReportPath = "Reports";
 
 

@@ -98,5 +98,10 @@
     <EmbeddedResource Include="Reports\ReportAssemblyOverviewHTMLFooter.html" />
     <EmbeddedResource Include="Reports\ReportAssemblyOverviewHTMLHeader.html" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Reports\ReportAssemblyOverviewMarkdownContent.xslt">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
