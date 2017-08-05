@@ -11,7 +11,6 @@ namespace Xunit.ScenarioReporting
         private readonly FileStream _fileStream;
         private readonly StreamWriter _sw;
         private readonly IReadOnlyDictionary<Type, Func<TextWriter, ReportItem, Task>> _handlers;
-        private bool _disposed;
 
         public MarkdownWriter(string path, string name)
         {
