@@ -7,6 +7,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScenarioReportingTests", "S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xunit.ScenarioReporting", "Xunit.ScenarioReporting\Xunit.ScenarioReporting.csproj", "{696CD9BD-8F1B-42C3-A0DA-0066DCEF9ECC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{934088AF-32B1-4921-B8C0-9C89D0B7CA14}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\packagenuget.ps1 = scripts\packagenuget.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1252352B-2010-49AF-9CD5-CFE5B7DA0ACC}"
+	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
+		Xunit.ScenarioReporting.nuspec = Xunit.ScenarioReporting.nuspec
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
