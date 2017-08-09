@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 namespace Xunit.ScenarioReporting
 {
+    /// <summary>
+    /// Used to describe a scenario using given when then 
+    /// </summary>
     public abstract class Scenario : IAsyncLifetime
     {
         private bool _verified;

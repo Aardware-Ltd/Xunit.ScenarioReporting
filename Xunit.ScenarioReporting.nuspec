@@ -11,5 +11,20 @@
     <description>Extension to xunit to produce human readable Given/When/Then reports in markdown and HTML</description>
     <copyright>Copyright 2017</copyright>
     <tags>Xunit Scenario Reporting</tags>
+    <dependencies>
+      <group targetFramework="net45">
+        <dependency id="xunit" version="2.2.0" />
+        <dependency id="xunit.abstractions" version="2.0.1" />
+        <dependency id="xunit.assert" version="2.2.0" />
+        <dependency id="xunit.core" version="2.2.0" />
+        <dependency id="xunit.extensibility.core" version="2.2.0" />
+        <dependency id="xunit.extensibility.execution" version="2.2.0" />
+      </group>
+    </dependencies>
   </metadata>
+    <files>
+      <file src="Xunit.ScenarioReporting\bin\Release\Xunit.ScenarioReporting.dll" target="lib\net45" />
+      <file src="Xunit.ScenarioReporting\bin\Release\Xunit.ScenarioReporting.pdb" target="lib\net45" />
+      <file src="Xunit.ScenarioReporting\bin\Release\Xunit.ScenarioReporting.xml" target="lib\net45" />
+    </files>
 </package>
