@@ -59,11 +59,17 @@
     <Compile Include="EndReport.cs" />
     <Compile Include="EndScenario.cs" />
     <Compile Include="ExceptionExtensions.cs" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
     <Compile Include="ReportWriter.cs" />
     <Compile Include="ScenarioFactAttributeDiscoverer.cs" />
     <Compile Include="ScenarioReportingXunitTestFrameworkDiscoverer.cs" />
     <Compile Include="ScenarioTheoryAttributeDiscoverer.cs" />
     <Compile Include="SerializationHelper.cs" />
+    <Compile Include="Settings.cs" />
     <Compile Include="StartReport.cs" />
     <Compile Include="Formatters.cs" />
     <Compile Include="IReportWriter.cs" />
@@ -91,7 +97,12 @@
     <Compile Include="StartThens.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Reports\ReportAssemblyOverviewHTMLContent.xslt" />
