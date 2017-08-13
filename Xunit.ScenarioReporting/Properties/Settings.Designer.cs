@@ -43,7 +43,7 @@ namespace Xunit.ScenarioReporting.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool GenerateHtmlReport {
             get {
                 return ((bool)(this["GenerateHtmlReport"]));
@@ -52,10 +52,19 @@ namespace Xunit.ScenarioReporting.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool GenerateMarkdownReport {
             get {
                 return ((bool)(this["GenerateMarkdownReport"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Temp\\Report.xml")]
+        public string TargetXMLReport {
+            get {
+                return ((string)(this["TargetXMLReport"]));
             }
         }
     }

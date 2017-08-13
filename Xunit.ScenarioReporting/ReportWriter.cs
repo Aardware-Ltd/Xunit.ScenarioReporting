@@ -12,6 +12,7 @@ namespace Xunit.ScenarioReporting
     {
         private readonly string _path;
         private readonly string _name;
+        private readonly string _xmlReport;
         private readonly FileStream _fileStream;
         private readonly StreamWriter _sw;
         private readonly XmlWriter _xw;
@@ -38,7 +39,18 @@ namespace Xunit.ScenarioReporting
                 [typeof(Scenario.Assertion)] = this.Then,
             };
 
-            _fileStream = new FileStream(Path.Combine(_path, Path.ChangeExtension(_name, ".xml")), FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
+            string configXmlReportFile = Properties.Settings.Default.TargetXMLReport;
+            if (FileLooksValid(configXmlReportFile)) {
+                _path = Path.GetDirectoryName(configXmlReportFile);
+                _xmlReport = configXmlReportFile;
+            }
+            else {
+                _xmlReport = Path.Combine(_path, Path.ChangeExtension(_name, ".xml"));
+            }
+
+            //_fileStream = new FileStream(Path.Combine(_path, Path.ChangeExtension(_name, ".xml")), FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
+            _fileStream = new FileStream(_xmlReport, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
+
             _sw = new StreamWriter(_fileStream);
 
             XmlWriterSettings xws = new XmlWriterSettings();
@@ -48,7 +60,8 @@ namespace Xunit.ScenarioReporting
 
         private async Task WriteMarkdown(string reportFile)
         {
-            string reportBaseFile = Path.Combine(_path, Path.ChangeExtension(_name, ".xml"));
+            //string reportBaseFile = Path.Combine(_path, Path.ChangeExtension(_name, ".xml"));
+            string reportBaseFile = _xmlReport;
             if (File.Exists(reportBaseFile))
             {
                 Assembly assembly = GetType().Assembly;
@@ -76,7 +89,8 @@ namespace Xunit.ScenarioReporting
 
         private async Task WriteHTML(string reportFile)
         {
-            string reportBaseFile = Path.Combine(_path, Path.ChangeExtension(_name, ".xml"));
+            //string reportBaseFile = Path.Combine(_path, Path.ChangeExtension(_name, ".xml"));
+            string reportBaseFile = _xmlReport;
             if (File.Exists(reportBaseFile)) {
 
                 Assembly assembly = GetType().Assembly;
@@ -304,22 +318,11 @@ namespace Xunit.ScenarioReporting
             Func<XmlWriter, ReportItem, Task> handler;
             if (_handlers.TryGetValue(item.GetType(), out handler))
             {
-               // await handler(_sw, item);
                 await handler(_xw, item);
             }
             else { throw new InvalidOperationException($"Unsupported report item of type {item.GetType().FullName}"); }
         }
-        /*
-        public const string H1 = "#";
-        public const string H2 = H1 + "#";
-        public const string H3 = H2 + "#";
-        public const string H4 = H3 + "#";
-        public const string H5 = H4 + "#";
-        public const string H6 = H5 + "#";
 
-        public const string Bold = "**";
-        public const string Italic = "_";
-        */
         public const string XMLTagAssembly = "Assembly";
         public const string XMLTagName = "Name";
         public const string XMLTagTime = "Time";

@@ -9,10 +9,13 @@
       <Value Profile="(Default)">C:\Temp\Report.md</Value>
     </Setting>
     <Setting Name="GenerateHtmlReport" Type="System.Boolean" Scope="Application">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="GenerateMarkdownReport" Type="System.Boolean" Scope="Application">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="TargetXMLReport" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\Temp\Report.xml</Value>
     </Setting>
   </Settings>
 </SettingsFile>
