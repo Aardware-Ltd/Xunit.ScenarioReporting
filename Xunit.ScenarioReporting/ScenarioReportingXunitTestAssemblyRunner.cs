@@ -10,7 +10,7 @@ using Xunit.Sdk;
 
 namespace Xunit.ScenarioReporting
 {
-    public class ScenarioReportingXunitTestAssemblyRunner : XunitTestAssemblyRunner
+    internal class ScenarioReportingXunitTestAssemblyRunner : XunitTestAssemblyRunner
     {
         private ScenarioReport _scenarioReport;
         public ScenarioReportingXunitTestAssemblyRunner(ITestAssembly testAssembly,

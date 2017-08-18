@@ -98,7 +98,7 @@ namespace Xunit.ScenarioReporting
         protected virtual IReadOnlyList<string> IgnoredProperties => new string[] { };
         protected virtual IReadOnlyDictionary<Type, IEqualityComparer> Comparers => new Dictionary<Type, IEqualityComparer>();
 
-        protected virtual Task<IReadOnlyList<ReportEntry.Then>> Verify(IReadOnlyList<TThen> expected, IReadOnlyList<TThen> actual)
+        internal virtual Task<IReadOnlyList<ReportEntry.Then>> Verify(IReadOnlyList<TThen> expected, IReadOnlyList<TThen> actual)
         {
             var maxIterations = Math.Min(expected.Count, actual.Count);
             var ignoredByType = new Dictionary<string, HashSet<string>>();
@@ -170,7 +170,7 @@ namespace Xunit.ScenarioReporting
             return Task.FromResult((IReadOnlyList<ReportEntry.Then>)_thens);
         }
 
-        protected override IReadOnlyList<ReportEntry.Given> ReportGivens()
+        internal override IReadOnlyList<ReportEntry.Given> ReportGivens()
         {
             return Definition.Given.Select(x => Report(x, (n, d) => new ReportEntry.Given(n, d))).ToArray();
         }
@@ -186,12 +186,12 @@ namespace Xunit.ScenarioReporting
             return create(type.Name, DetailFromProperties(instance, type));
         }
 
-        protected override ReportEntry.When ReportWhen()
+        internal override ReportEntry.When ReportWhen()
         {
             return Report(Definition.When, (n, d) => new ReportEntry.When(n, d));
         }
 
-        protected override IReadOnlyList<ReportEntry.Then> ReportThens()
+        internal override IReadOnlyList<ReportEntry.Then> ReportThens()
         {
             return _thens;
         }

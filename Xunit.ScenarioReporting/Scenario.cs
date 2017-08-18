@@ -26,12 +26,12 @@ namespace Xunit.ScenarioReporting
         internal ReportEntry.When GetWhen() => ReportWhen();
         internal IReadOnlyList<ReportEntry.Then> GetThens() => ReportThens().Concat(_results).ToList();
 
-        protected abstract IReadOnlyList<ReportEntry.Given> ReportGivens();
-        protected abstract ReportEntry.When ReportWhen();
-        protected abstract IReadOnlyList<ReportEntry.Then> ReportThens();
+        internal abstract IReadOnlyList<ReportEntry.Given> ReportGivens();
+        internal abstract ReportEntry.When ReportWhen();
+        internal abstract IReadOnlyList<ReportEntry.Then> ReportThens();
 
 
-        protected internal class ReportEntry : ReportItem
+        internal class ReportEntry : ReportItem
         {
             public ReportEntry(string title, IReadOnlyList<Detail> details)
             {

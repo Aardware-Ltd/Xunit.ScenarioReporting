@@ -72,7 +72,6 @@
     <Compile Include="StartReport.cs" />
     <Compile Include="Formatters.cs" />
     <Compile Include="IReportWriter.cs" />
-    <Compile Include="NullScenarioReport.cs" />
     <Compile Include="ReflectionBasedScenario.cs" />
     <Compile Include="ReportItem.cs" />
     <Compile Include="Scenario.cs" />

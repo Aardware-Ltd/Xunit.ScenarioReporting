@@ -9,7 +9,7 @@ using Xunit.Sdk;
 
 namespace Xunit.ScenarioReporting
 {
-    public class ScenarioReportingXunitTestFramework : XunitTestFramework
+    internal class ScenarioReportingXunitTestFramework : XunitTestFramework
     {
         public ScenarioReportingXunitTestFramework(IMessageSink messageSink) : base(messageSink)
         {

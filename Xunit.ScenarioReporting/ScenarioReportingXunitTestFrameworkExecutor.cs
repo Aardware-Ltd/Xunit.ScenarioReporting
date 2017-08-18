@@ -5,7 +5,7 @@ using Xunit.Sdk;
 
 namespace Xunit.ScenarioReporting
 {
-    public class ScenarioReportingXunitTestFrameworkExecutor : XunitTestFrameworkExecutor
+    internal class ScenarioReportingXunitTestFrameworkExecutor : XunitTestFrameworkExecutor
     {
         public ScenarioReportingXunitTestFrameworkExecutor(AssemblyName assemblyName, ISourceInformationProvider sourceInformationProvider, IMessageSink diagnosticMessageSink)
             : base(assemblyName, sourceInformationProvider, diagnosticMessageSink)

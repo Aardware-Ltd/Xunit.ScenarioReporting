@@ -51,7 +51,7 @@ namespace Xunit.ScenarioReporting
 
         }
 
-        private async Task WriteMarkdown(string reportBaseFile, string reportFile)
+        private void WriteMarkdown(string reportBaseFile, string reportFile)
         {
             if (File.Exists(reportBaseFile))
             {
@@ -244,7 +244,7 @@ namespace Xunit.ScenarioReporting
 
             if (_generateMarkdownReport)
             {
-                await WriteMarkdown(_targetXmlReportFile, _targetMarkdownReportFile);
+                WriteMarkdown(_targetXmlReportFile, _targetMarkdownReportFile);
             }
 
         }

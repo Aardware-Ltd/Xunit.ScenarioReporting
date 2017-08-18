@@ -1,4 +1,4 @@
 namespace Xunit.ScenarioReporting
 {
-    public abstract class ReportItem { }
+    internal abstract class ReportItem { }
 }
