@@ -36,6 +36,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -61,11 +62,13 @@
     <Compile Include="EndReport.cs" />
     <Compile Include="EndScenario.cs" />
     <Compile Include="ExceptionExtensions.cs" />
+    <Compile Include="ReportConfiguration.cs" />
     <Compile Include="ReportWriter.cs" />
     <Compile Include="ScenarioFactAttributeDiscoverer.cs" />
     <Compile Include="ScenarioReportingXunitTestFrameworkDiscoverer.cs" />
     <Compile Include="ScenarioTheoryAttributeDiscoverer.cs" />
     <Compile Include="SerializationHelper.cs" />
+    <Compile Include="Settings.cs" />
     <Compile Include="StartReport.cs" />
     <Compile Include="Formatters.cs" />
     <Compile Include="IReportWriter.cs" />
@@ -102,6 +105,9 @@
     <EmbeddedResource Include="Reports\ReportAssemblyOverviewMarkdownContent.xslt">
       <SubType>Designer</SubType>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
