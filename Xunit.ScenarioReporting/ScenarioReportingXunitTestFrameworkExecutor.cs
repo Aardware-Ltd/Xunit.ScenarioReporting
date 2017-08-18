@@ -22,6 +22,4 @@ namespace Xunit.ScenarioReporting
                 await assemblyRunner.RunAsync();
         }
     }
-    //Xunit framework has changed and this class is copied from the pre release versions. when it is released, most of the implementation can be removed and just have the 
-    //DiscoverTypeCache primed with overridden types for scenarios
 }

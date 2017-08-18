@@ -6,16 +6,16 @@
 
 		<div class="report-header">
         <h2><a name="top">Here's what happened</a></h2>
-        <p>Looking at Assembly <span class="assembly-name"><xsl:value-of select="Assembly/Name"/></span> of <span class="assembly-timestamp"><xsl:value-of select="Assembly/Time"/></span> with the following Scenarios.</p>
-        <xsl:variable name="cntScenario" select="count(Assembly/Scenario)" />
-		<p><xsl:value-of select="$cntScenario" /> Scenario(s):</p>
-		<xsl:if test="$cntScenario = 0">
+        <p>Looking at Assembly <span class="assembly-name"><xsl:value-of select="Assembly/Name"/></span> of <span class="assembly-timestamp"><xsl:value-of select="Assembly/Time"/></span> with the following Definitions.</p>
+        <xsl:variable name="cntDefinition" select="count(Assembly/Definition)" />
+		<p><xsl:value-of select="$cntDefinition" /> Definition(s):</p>
+		<xsl:if test="$cntDefinition = 0">
 			<p>[There are no scenarios.]</p>
     </xsl:if>
 		
-		<xsl:if test="$cntScenario > 0">
+		<xsl:if test="$cntDefinition > 0">
 			<ul>
-				<xsl:for-each select="Assembly/Scenario">
+				<xsl:for-each select="Assembly/Definition">
 					<li>
 						<a href="#{generate-id(Name)}">
 						<xsl:value-of select="Name" /></a>
@@ -28,10 +28,10 @@
 
 		<div class="report-body">
 
-			<xsl:for-each select="Assembly/Scenario">
+			<xsl:for-each select="Assembly/Definition">
 
         <section class="section-scenario">
-				<h3><a name="{generate-id(Name)}">Scenario</a></h3>
+				<h3><a name="{generate-id(Name)}">Definition</a></h3>
 				<p>Name: <xsl:value-of select="Name"/></p>
 
 				<div class="section-givens">

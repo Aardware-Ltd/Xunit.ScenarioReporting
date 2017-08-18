@@ -25,9 +25,10 @@ namespace Xunit.ScenarioReporting
 
         protected override object CallTestMethod(object testClassInstance)
         {
+            object result = null;
             try
             {
-                var result = base.CallTestMethod(testClassInstance);
+                result = base.CallTestMethod(testClassInstance);
                 //TODO: the base class has support for f# types async results, do we need to unwrap this?
                 if (result is Task && result.GetType().IsConstructedGenericType)
                 {
@@ -42,7 +43,7 @@ namespace Xunit.ScenarioReporting
                 {
                     var scenario = (Scenario)result;
                     if (scenario.Title == null) scenario.Title = DisplayName;
-                    return VerifyAndReportScenario(scenario);
+                    return VerifyAndReportScenario(scenario, TestCase.Method.Name);
                 }
                 if (_scenario != null)
                 {
@@ -50,21 +51,28 @@ namespace Xunit.ScenarioReporting
                 }
                 return result;
             }
-            catch (Exception e) when (!(e is ScenarioVerificationException))
+            catch (Exception e)
             {
 
                 if (_scenario != null)
                 {
                     _scenario.AddResult(TestCase.Method.Name, e.Unwrap());
                 }
-                throw;
+                Aggregator.Add(e);
+                return result;
             }
         }
 
-        private async Task VerifyAndReportScenario(Scenario scenario)
+        private async Task VerifyAndReportScenario(Scenario scenario, string name)
         {
-            await scenario.SafeVerify();
-            _report.Report(scenario);
+            try
+            {
+                await scenario.SafeVerify(name);
+            }
+            finally
+            {
+                _report.Report(scenario);
+            }
 
         }
     }

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit.Sdk;
 
 namespace Xunit.ScenarioReporting
 {
@@ -65,14 +66,21 @@ namespace Xunit.ScenarioReporting
 
         public void Report(Scenario scenario)
         {
-            var writer = new DelayedBatchWriter(_queue);
-            writer.Write(new StartScenario(scenario.Title));
-            foreach (var given in scenario.GetGivens())
-                writer.Write(given);
-            writer.Write(scenario.GetWhen());
-            foreach (var then in scenario.GetThens())
-                writer.Write(then);
-            writer.Complete();
+            try
+            {
+                var writer = new DelayedBatchWriter(_queue);
+                writer.Write(new StartScenario(scenario.Title));
+                foreach (var given in scenario.GetGivens())
+                    writer.Write(given);
+                writer.Write(scenario.GetWhen());
+                foreach (var then in scenario.GetThens())
+                    writer.Write(then);
+                writer.Complete();
+            }
+            catch(Exception ex)
+            {
+                _error = ex;
+            }
             EnsureWriting();
         }
 
@@ -98,45 +106,24 @@ namespace Xunit.ScenarioReporting
                     }
                 });
             }
-
-            private bool _hasStartedWritingGivens;
-            private bool _hasStartedWritingThens;
-
+            
             public void Write(StartScenario start)
             {
                 _batch.Enqueue(start);
             }
 
-            public void Write(Scenario.Given given)
+            public void Write(Scenario.ReportEntry.Given given)
             {
-                if (!_hasStartedWritingGivens)
-                {
-                    _batch.Enqueue(new StartGivens());
-                    _hasStartedWritingGivens = true;
-                }
-                else
-                {
-                    _batch.Enqueue(new AdditionalGiven());
-                }
                 _batch.Enqueue(given);
             }
 
-            public void Write(Scenario.When when)
+            public void Write(Scenario.ReportEntry.When when)
             {
                 _batch.Enqueue(when);
             }
 
-            public void Write(Scenario.Then then)
+            public void Write(Scenario.ReportEntry.Then then)
             {
-                if (!_hasStartedWritingThens)
-                {
-                    _batch.Enqueue(new StartThens());
-                    _hasStartedWritingThens = true;
-                }
-                else
-                {
-                    _batch.Enqueue(new AdditionalThen());
-                }
                 _batch.Enqueue(then);
             }
         }

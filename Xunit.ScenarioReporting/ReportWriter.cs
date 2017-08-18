@@ -28,14 +28,10 @@ namespace Xunit.ScenarioReporting
                 [typeof(EndReport)] = this.EndReport,
                 [typeof(StartScenario)] = this.StartScenario,
                 [typeof(EndScenario)] = this.EndScenario,
-                [typeof(StartGivens)] = this.StartGivens,
-                [typeof(AdditionalGiven)] = this.Additional,
-                [typeof(Scenario.Given)] = this.Given,
-                [typeof(Scenario.When)] = this.When,
-                [typeof(StartThens)] = this.StartThens,
-                [typeof(AdditionalThen)] = this.Additional,
-                [typeof(Scenario.Then)] = this.Then,
-                [typeof(Scenario.Assertion)] = this.Then,
+                [typeof(Scenario.ReportEntry.Given)] = this.Given,
+                [typeof(Scenario.ReportEntry.When)] = this.When,
+                [typeof(Scenario.ReportEntry.Then)] = this.Then,
+                [typeof(Scenario.ReportEntry.Assertion)] = this.Then,
             };
 
             _fileStream = new FileStream(Path.Combine(_path, Path.ChangeExtension(_name, ".xml")), FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
@@ -125,18 +121,11 @@ namespace Xunit.ScenarioReporting
             await writer.WriteElementStringAsync(null, XMLTagName, null, start.Name);
 
         }
-
-        private async Task StartGivens(XmlWriter writer, ReportItem item)
-        {
-            //TODO: Remove from handlers if not used
-            //await writer.WriteLineAsync($"{H3} Given ");
-            //await writer.WriteElementStringAsync(null, XMLTagMessage, null, "**Start Given");
-
-        }
+        
 
         private async Task Given(XmlWriter writer, ReportItem item)
         {
-            var given = (Scenario.Given)item;
+            var given = (Scenario.ReportEntry.Given)item;
             //await writer.WriteLineAsync($"{H4} {given.Title}");
             await writer.WriteStartElementAsync(null, XMLTagGiven, null);
             await WriteDetails(writer, given.Title, given.Details);
@@ -145,7 +134,7 @@ namespace Xunit.ScenarioReporting
 
         private async Task Then(XmlWriter writer, ReportItem item)
         {
-            var then = (Scenario.Then)item;
+            var then = (Scenario.ReportEntry.Then)item;
             //await writer.WriteLineAsync($"{H4} {then.Title}");
             await writer.WriteStartElementAsync(null, XMLTagThen, null);
             await WriteDetails(writer, then.Title, then.Details);
@@ -154,26 +143,16 @@ namespace Xunit.ScenarioReporting
 
         private async Task When(XmlWriter writer, ReportItem item)
         {
-            var when = (Scenario.When)item;
+            var when = (Scenario.ReportEntry.When)item;
             //await writer.WriteLineAsync($"{H4} When ");
             //await writer.WriteLineAsync($"{H4} {when.Title}");
             await writer.WriteStartElementAsync(null, XMLTagWhen, null);
             await WriteDetails(writer, when.Title, when.Details);
             await writer.WriteEndElementAsync();
         }
-
-        private async Task StartThens(XmlWriter writer, ReportItem item)
-        {
-            //TODO: Remove from handlers if not used
-            //await writer.WriteLineAsync($"{H4} Then ");
-            //await writer.WriteElementStringAsync(null, XMLTagMessage, null, "**Start Thens");
-        }
         
-
-        private static async Task WriteDetails(XmlWriter writer, string title, IReadOnlyList<Scenario.Detail> details)
+        private static async Task WriteDetails(XmlWriter writer, string title, IReadOnlyList<Scenario.ReportEntry.Detail> details)
         {
-            //await writer.WriteStartElementAsync(null, XMLTagDetails, null);
-
             await writer.WriteElementStringAsync(null, XMLTagTitle, null, title);
 
             bool isFirst = true;
@@ -181,7 +160,7 @@ namespace Xunit.ScenarioReporting
             {
                 await writer.WriteStartElementAsync(null, XMLTagDetail, null);
 
-                if (detail is Scenario.Failure)
+                if (detail is Scenario.ReportEntry.Failure)
                 {
                     //TODO: This could be an an xml error tag => update xsl and css 
                     //await writer.WriteLineAsync($"{Bold}FAILED {detail.Name}{Bold}");
@@ -255,13 +234,6 @@ namespace Xunit.ScenarioReporting
             await WriteHTML();
             await WriteMarkdown();
         }
-
-        private async Task Additional(XmlWriter writer, ReportItem item)
-        {
-            //TODO: Remove from handlers if not used
-            //await writer.WriteLineAsync("and");
-            //await writer.WriteElementStringAsync(null, XMLTagMessage, null, "**additionally");
-        }
         
 
         public async Task Write(ReportItem item)
@@ -274,21 +246,11 @@ namespace Xunit.ScenarioReporting
             }
             else { throw new InvalidOperationException($"Unsupported report item of type {item.GetType().FullName}"); }
         }
-        /*
-        public const string H1 = "#";
-        public const string H2 = H1 + "#";
-        public const string H3 = H2 + "#";
-        public const string H4 = H3 + "#";
-        public const string H5 = H4 + "#";
-        public const string H6 = H5 + "#";
 
-        public const string Bold = "**";
-        public const string Italic = "_";
-        */
         public const string XMLTagAssembly = "Assembly";
         public const string XMLTagName = "Name";
         public const string XMLTagTime = "Time";
-        public const string XMLTagScenario = "Scenario";
+        public const string XMLTagScenario = "Definition";
         public const string XMLTagGiven = "Given";
         public const string XMLTagThen = "Then";
         public const string XMLTagWhen = "When";

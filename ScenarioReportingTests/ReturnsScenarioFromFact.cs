@@ -24,8 +24,10 @@ namespace ScenarioReportingTests
         {
             var bus = new Bus();
             bus.Subscribe(new SimpleResponder(bus));
-            var scenario = new MessageBusScenario(bus, new Message[]{}, new ReverseString("Hello, world!"), new []{new ReversedString("!dlrow ,olleH"), } );
-            return scenario;
+            return new MessageBusScenario(bus).Define(def => def
+                .Given()
+                .When(new ReverseString("Hello, world!"))
+                .Then(new ReversedString("!dlrow ,olleH")));
         }
 
         class SimpleResponder : IHandle<ReverseString> {
@@ -268,19 +270,15 @@ namespace ScenarioReportingTests
         }
         class MessageBusScenario : ReflectionBasedScenario<Message, Message, Message>, IHandle<Message> {
             private readonly Bus _bus;
-            private readonly Definition _definition;
             private readonly TaskCompletionSource<bool> _allMessagesReceived;
             private readonly List<Message> _actuals;
-            private readonly Message _when;
             private bool _collecting;
 
-            public MessageBusScenario(Bus bus, IReadOnlyList<Message> givens, Message when, IReadOnlyList<Message> thens)
+            public MessageBusScenario(Bus bus)
             {
                 _bus = bus;
-                _when = when;
                 _actuals = new List<Message>();
                 _bus.Subscribe(this);
-                _definition = Definition.Define(givens.ToArray()).When(when).Then(thens.ToArray());
                 _allMessagesReceived = new TaskCompletionSource<bool>();
             }
             protected override Task Given(IReadOnlyList<Message> givens)
@@ -303,12 +301,6 @@ namespace ScenarioReportingTests
                 return _actuals;
             }
 
-            protected override async Task<Definition> Define()
-            {
-                
-                return _definition;
-            }
-
             public Task Handle(Message msg)
             {
                 if (msg is EndMarker)
@@ -316,7 +308,7 @@ namespace ScenarioReportingTests
                     _allMessagesReceived.TrySetResult(true);
                     return Task.CompletedTask;
                 }
-                if (msg == _when)
+                if (msg == Definition?.When)
                 {
                     _collecting = true;
                     return Task.CompletedTask;

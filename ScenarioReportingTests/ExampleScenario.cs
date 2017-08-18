@@ -16,6 +16,7 @@ namespace ScenarioReportingTests
         public ExampleScenario()
         {
             _aggregate = new CalculatorAggregate();
+            this.Define(def => def.Given(new Number(3), new Number(5)).When(new Operation(OperationType.Add)).Then(new ComputedResult(8)));
         }
 
         private readonly CalculatorAggregate _aggregate;
@@ -40,12 +41,7 @@ namespace ScenarioReportingTests
         {
             return Task.FromResult((IReadOnlyList<object>)new []{_actual});
         }
-
-        protected override Task<Definition> Define()
-        {
-            return Task.FromResult(Definition.Define(new Number(3), new Number(5)).When(new Operation(OperationType.Add)).Then(new ComputedResult(8)));
-        }
-
+        
         public bool OtherInvariant => true;
 
 

@@ -4,26 +4,26 @@
 <xsl:preserve-space elements="*"/>
 <xsl:template match="/">
   ## <a name="top">Here's what happened</a>
-  Looking at Assembly **<xsl:value-of select="Assembly/Name"/>** of **<xsl:value-of select="Assembly/Time"/>** with the following Scenarios.  
+  Looking at Assembly **<xsl:value-of select="Assembly/Name"/>** of **<xsl:value-of select="Assembly/Time"/>** with the following Definitions.  
   
-  <xsl:variable name="cntScenario" select="count(Assembly/Scenario)" />
+  <xsl:variable name="cntDefinition" select="count(Assembly/Definition)" />
   
-  <xsl:value-of select="$cntScenario" /> Scenario(s):
-  <xsl:if test="$cntScenario = 0">
+  <xsl:value-of select="$cntDefinition" /> Definition(s):
+  <xsl:if test="$cntDefinition = 0">
     [There are no scenarios.]
   </xsl:if>
 		
-  <xsl:if test="$cntScenario > 0">
-    <xsl:for-each select="Assembly/Scenario">
+  <xsl:if test="$cntDefinition > 0">
+    <xsl:for-each select="Assembly/Definition">
       <xsl:variable name="navID" select="generate-id(Name)" />
   * [<xsl:value-of select="Name" />](&#35;<xsl:value-of select="$navID" />)
     </xsl:for-each>
   </xsl:if>
 
   
-  <xsl:for-each select="Assembly/Scenario">
+  <xsl:for-each select="Assembly/Definition">
 
-  ### <a name="{generate-id(Name)}">Scenario</a>
+  ### <a name="{generate-id(Name)}">Definition</a>
   Name: <xsl:value-of select="Name"/>
 
   #### Given

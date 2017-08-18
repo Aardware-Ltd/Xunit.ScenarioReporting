@@ -13,22 +13,22 @@ namespace Xunit.ScenarioReporting
         private bool _verified;
         private bool _initialized;
         private bool _errored;
-        readonly List<Then> _results = new List<Then>();
+        readonly List<ReportEntry.Then> _results = new List<ReportEntry.Then>();
 
         internal void AddResult(string name, Exception e = null)
         {
             if(e != null)
-                _results.Add(new Assertion(name, e));
-            else _results.Add(new Assertion(name));
+                _results.Add(new ReportEntry.Assertion(name, e));
+            else _results.Add(new ReportEntry.Assertion(name));
         }
 
-        internal IReadOnlyList<Given> GetGivens() => ReportGivens();
-        internal When GetWhen() => ReportWhen();
-        internal IReadOnlyList<Then> GetThens() => ReportThens().Concat(_results).ToList();
+        internal IReadOnlyList<ReportEntry.Given> GetGivens() => ReportGivens();
+        internal ReportEntry.When GetWhen() => ReportWhen();
+        internal IReadOnlyList<ReportEntry.Then> GetThens() => ReportThens().Concat(_results).ToList();
 
-        protected abstract IReadOnlyList<Given> ReportGivens();
-        protected abstract When ReportWhen();
-        protected abstract IReadOnlyList<Then> ReportThens();
+        protected abstract IReadOnlyList<ReportEntry.Given> ReportGivens();
+        protected abstract ReportEntry.When ReportWhen();
+        protected abstract IReadOnlyList<ReportEntry.Then> ReportThens();
 
 
         protected internal class ReportEntry : ReportItem
@@ -41,83 +41,83 @@ namespace Xunit.ScenarioReporting
 
             public string Title { get; }
             public IReadOnlyList<Detail> Details { get; }
-        }
 
-        protected internal class Given : ReportEntry
-        {
-            public Given(string title, IReadOnlyList<Detail> details) : base(title, details)
+            public class Given : ReportEntry
             {
+                public Given(string title, IReadOnlyList<Detail> details) : base(title, details)
+                {
+                }
             }
-        }
-
-        protected internal class When : ReportEntry
-        {
-            public When(string title, IReadOnlyList<Detail> details) : base(title, details)
+            public class When : ReportEntry
             {
-            }
-        }
-
-        protected internal class Then : ReportEntry
-        {
-            public Then(string title, IReadOnlyList<Detail> details) : base(title, details)
-            {
-
-            }
-        }
-
-        protected internal class Assertion : Then
-        {
-            public Assertion(string title) : base(title, new Detail[] { })
-            {
+                public When(string title, IReadOnlyList<Detail> details) : base(title, details)
+                {
+                }
             }
 
-            public Assertion(string title, Exception ex) : base(title, new[] { ExceptionToDetail(ex) }) { }
-
-            static Detail ExceptionToDetail(Exception ex)
+            public class Then : ReportEntry
             {
-                return new Failure(ex.Message);
+                public Then(string title, IReadOnlyList<Detail> details) : base(title, details)
+                {
+
+                }
+            }
+
+            public class Assertion : Then
+            {
+                public Assertion(string title) : base(title, new Detail[] { })
+                {
+                }
+
+                public Assertion(string title, Exception ex) : base(title, new[] { ExceptionToDetail(ex) }) { }
+
+                static Detail ExceptionToDetail(Exception ex)
+                {
+                    return new Failure(ex.Message, ex.StackTrace);
+                }
+            }
+
+            public class Failure : Detail
+            {
+                public Failure(string name, string stacktrace) : base(name, stacktrace)
+                {
+
+                }
+            }
+            public class Match : Detail
+            {
+                public Match(string name, object value, string format = null, Func<object, string> formatter = null) : base(name, value, format, formatter)
+                {
+                }
+            }
+
+            public class Mismatch : Detail
+            {
+                public object Actual { get; }
+
+                public Mismatch(string name, object expected, object actual, string format = null, Func<object, string> formatter = null) : base(name, expected, format, formatter)
+                {
+                    Actual = actual;
+                }
+            }
+
+            public class Detail
+            {
+                public string Name { get; }
+                public object Value { get; }
+                public string Format { get; }
+                public Func<object, string> Formatter { get; }
+
+                public Detail(string name, object value, string format = null, Func<object, string> formatter = null)
+                {
+                    Name = name;
+                    Value = value;
+                    Format = format;
+                    Formatter = formatter;
+                }
             }
         }
-
-        protected internal class Failure : Detail
-        {
-            public Failure(string name) : base(name, null)
-            {
-
-            }
-        }
-        protected internal class Match : Detail
-        {
-            public Match(string name, object value, string format = null, Func<object, string> formatter = null) : base(name, value, format, formatter)
-            {
-            }
-        }
-
-        protected internal class Mismatch : Detail
-        {
-            public object Actual { get; }
-
-            public Mismatch(string name, object expected, object actual, string format = null, Func<object, string> formatter = null) : base(name, expected, format, formatter)
-            {
-                Actual = actual;
-            }
-        }
-
-        protected internal class Detail
-        {
-            public string Name { get; }
-            public object Value { get; }
-            public string Format { get; }
-            public Func<object, string> Formatter { get; }
-
-            public Detail(string name, object value, string format = null, Func<object, string> formatter = null)
-            {
-                Name = name;
-                Value = value;
-                Format = format;
-                Formatter = formatter;
-            }
-        }
+        
 
         async Task IAsyncLifetime.InitializeAsync()
         {
@@ -134,17 +134,27 @@ namespace Xunit.ScenarioReporting
             }
         }
 
-        internal async Task SafeVerify()
+        internal async Task SafeVerify(string name)
         {
             if (_verified || _errored) return;
-            await Initialize();
-            _verified = true;
-            await Verify();
+            try
+            {
+                await Initialize();
+
+                _verified = true;
+                await Verify();
+            }
+            catch (Exception e)
+            {
+                _errored = true;
+                AddResult(name, e);
+                throw new ScenarioVerificationException(e);
+            }
         }
 
         async Task IAsyncLifetime.DisposeAsync()
         {
-            await SafeVerify();
+            await SafeVerify("DisposeAsync");
         }
 
         protected abstract Task Verify();

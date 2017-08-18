@@ -32,13 +32,13 @@ namespace Xunit.ScenarioReporting
         //protected override void CreateCollectionFixture(Type fixtureType)
         //{
         //    if (CollectionFixtureMappings.ContainsKey(fixtureType)) return;
-        //    if (fixtureType.IsSubclassOf(typeof(Scenario)))
+        //    if (fixtureType.IsSubclassOf(typeof(Definition)))
         //    {
         //        Aggregator.Run(() =>
         //        {
         //            var ctors = fixtureType.GetConstructors();
-        //            if (ctors.Length > 1) throw new InvalidOperationException($"Scenario type {fixtureType.FullName} can only have 1 public constructor");
-        //            if (ctors.Length == 0) throw new InvalidOperationException($"Scenario type {fixtureType.FullName} must have a public constructor");
+        //            if (ctors.Length > 1) throw new InvalidOperationException($"Definition type {fixtureType.FullName} can only have 1 public constructor");
+        //            if (ctors.Length == 0) throw new InvalidOperationException($"Definition type {fixtureType.FullName} must have a public constructor");
 
         //            var ctor = ctors[0];
 
@@ -53,11 +53,11 @@ namespace Xunit.ScenarioReporting
 
         //            if (missingParameters.Count > 0)
         //                Aggregator.Add(new TestClassException(
-        //                    $"Scenario type '{fixtureType.FullName}' had one or more unresolved constructor arguments: {string.Join(", ", missingParameters.Select(p => $"{p.ParameterType.Name} {p.Name}"))}"
+        //                    $"Definition type '{fixtureType.FullName}' had one or more unresolved constructor arguments: {string.Join(", ", missingParameters.Select(p => $"{p.ParameterType.Name} {p.Name}"))}"
         //                ));
         //            else
         //            {
-        //                CollectionFixtureMappings[fixtureType] = _scenario = (Scenario)ctor.Invoke(ctorArgs);
+        //                CollectionFixtureMappings[fixtureType] = _scenario = (Definition)ctor.Invoke(ctorArgs);
         //                _scenario.Title = TestCollection.CollectionDefinition.Name;
         //            }
         //        });
