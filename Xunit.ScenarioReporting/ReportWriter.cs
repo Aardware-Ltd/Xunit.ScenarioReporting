@@ -10,19 +10,18 @@ namespace Xunit.ScenarioReporting
 {
     class ReportWriter : IReportWriter
     {
-        private readonly string _path;
-        private readonly string _name;
-        private readonly string _xmlReport;
         private readonly FileStream _fileStream;
         private readonly StreamWriter _sw;
         private readonly XmlWriter _xw;
         private readonly IReadOnlyDictionary<Type, Func<XmlWriter, ReportItem, Task>> _handlers;
+        private readonly bool _generateHtmlReport;
+        private readonly bool _generateMarkdownReport;
+        private readonly string _targetHtmlReportFile;
+        private readonly string _targetMarkdownReportFile;
+        private readonly string _targetXmlReportFile;
 
-
-        public ReportWriter(string path, string name)
+        public ReportWriter(string assemblyFullPathName, string assemblyConfigFullPathName)
         {
-            _path = path;
-            _name = name;
             _handlers = new Dictionary<Type, Func<XmlWriter, ReportItem, Task>>()
             {
                 [typeof(StartReport)] = this.StartReport,
@@ -38,30 +37,26 @@ namespace Xunit.ScenarioReporting
                 [typeof(Scenario.Then)] = this.Then,
                 [typeof(Scenario.Assertion)] = this.Then,
             };
+            ReportConfiguration rc = new ReportConfiguration(assemblyFullPathName, assemblyConfigFullPathName);
+            _generateHtmlReport = rc.GetGenerateHtmlReport();
+            _generateMarkdownReport = rc.GetGenerateMarkdownReport();
+            _targetHtmlReportFile = rc.GetTargetHtmlReportFile();
+            _targetMarkdownReportFile = rc.GetTargetMarkdownReportFile();
+            _targetXmlReportFile = rc.GetTargetXmlReportFile();
 
-            string configXmlReportFile = Properties.Settings.Default.TargetXMLReport;
-            if (FileLooksValid(configXmlReportFile)) {
-                _path = Path.GetDirectoryName(configXmlReportFile);
-                _xmlReport = configXmlReportFile;
-            }
-            else {
-                _xmlReport = Path.Combine(_path, Path.ChangeExtension(_name, ".xml"));
-            }
-
-            //_fileStream = new FileStream(Path.Combine(_path, Path.ChangeExtension(_name, ".xml")), FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
-            _fileStream = new FileStream(_xmlReport, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
+            _fileStream = new FileStream(_targetXmlReportFile, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
 
             _sw = new StreamWriter(_fileStream);
 
             XmlWriterSettings xws = new XmlWriterSettings();
             xws.Async = true;
             _xw = XmlWriter.Create(_sw, xws);
+
+
         }
 
-        private async Task WriteMarkdown(string reportFile)
+        private async Task WriteMarkdown(string reportBaseFile, string reportFile)
         {
-            //string reportBaseFile = Path.Combine(_path, Path.ChangeExtension(_name, ".xml"));
-            string reportBaseFile = _xmlReport;
             if (File.Exists(reportBaseFile))
             {
                 Assembly assembly = GetType().Assembly;
@@ -73,9 +68,6 @@ namespace Xunit.ScenarioReporting
                 xctReportContent.Load(xrReportContent);
 
                 //generate report
-                if (!FileLooksValid(reportFile)) {
-                    reportFile = Path.Combine(_path, ReportAssemblyOverviewMarkdown); //Default
-                }
                 Stream sReportOutput = new FileStream(reportFile, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
 
                 xctReportContent.Transform(reportBaseFile, null, sReportOutput);
@@ -87,10 +79,8 @@ namespace Xunit.ScenarioReporting
 
         }
 
-        private async Task WriteHTML(string reportFile)
+        private async Task WriteHTML(string reportBaseFile, string reportFile)
         {
-            //string reportBaseFile = Path.Combine(_path, Path.ChangeExtension(_name, ".xml"));
-            string reportBaseFile = _xmlReport;
             if (File.Exists(reportBaseFile)) {
 
                 Assembly assembly = GetType().Assembly;
@@ -104,10 +94,6 @@ namespace Xunit.ScenarioReporting
                 Stream sReportFooter = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + ReportPath + "." + ReportAssemblyOverviewHTMLFooter);
 
                 //generate report
-                if (!FileLooksValid(reportFile))
-                {
-                    reportFile = Path.Combine(_path, ReportAssemblyOverviewHTML); //Default
-                }
                 Stream sReportOutput = new FileStream(reportFile, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
                 await sReportHeader.CopyToAsync(sReportOutput);
                 xctReportContent.Transform(reportBaseFile, null, sReportOutput);
@@ -118,29 +104,6 @@ namespace Xunit.ScenarioReporting
 
             }
 
-        }
-
-        public bool FileLooksValid(String fileName)
-        {                        
-            System.IO.FileInfo fi = null; //File does not need to exist to create a FileInfo instance
-            try
-            {
-                fi = new System.IO.FileInfo(fileName);
-            }
-            catch (ArgumentException) { }
-            catch (System.IO.PathTooLongException) { }
-            catch (NotSupportedException) { }
-
-            if (ReferenceEquals(fi, null))
-            {
-                //file name isn't valid
-                return false;
-            }
-            else
-            {
-                //file name is valid. May check for existence by calling fi.Exists.
-                return true;
-            }
         }
 
         private async Task StartReport(XmlWriter writer, ReportItem item)
@@ -296,13 +259,15 @@ namespace Xunit.ScenarioReporting
             _sw.Dispose();
             _fileStream.Dispose();
 
-            if (Properties.Settings.Default.GenerateHtmlReport) { 
-                await WriteHTML(Properties.Settings.Default.TargetHtmlReportFile);
+            if (_generateHtmlReport) {
+                await WriteHTML(_targetXmlReportFile, _targetHtmlReportFile);
             }
-            if (Properties.Settings.Default.GenerateMarkdownReport)
+
+            if (_generateMarkdownReport)
             {
-                await WriteMarkdown(Properties.Settings.Default.TargetMarkdownReportFile);
+                await WriteMarkdown(_targetXmlReportFile, _targetMarkdownReportFile);
             }
+
         }
 
         private async Task Additional(XmlWriter writer, ReportItem item)
@@ -320,7 +285,10 @@ namespace Xunit.ScenarioReporting
             {
                 await handler(_xw, item);
             }
-            else { throw new InvalidOperationException($"Unsupported report item of type {item.GetType().FullName}"); }
+            else
+            {
+                throw new InvalidOperationException($"Unsupported report item of type {item.GetType().FullName}");
+            }
         }
 
         public const string XMLTagAssembly = "Assembly";
