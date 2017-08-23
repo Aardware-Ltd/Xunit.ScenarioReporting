@@ -16,6 +16,7 @@ namespace Xunit.ScenarioReporting
         internal const string XmlTagTitle = "Title";
         internal const string XmlTagDetail = "Detail";
         internal const string XmlTagMessage = "Message";
+        internal const string XmlTagFailure = "Failure";
         internal const string ReportAssemblyOverviewHtmlHeader = "ReportAssemblyOverviewHTMLHeader.html";
         internal const string ReportAssemblyOverviewHtmlContent = "ReportAssemblyOverviewHTMLContent.xslt";
         internal const string ReportAssemblyOverviewHtmlFooter = "ReportAssemblyOverviewHTMLFooter.html";

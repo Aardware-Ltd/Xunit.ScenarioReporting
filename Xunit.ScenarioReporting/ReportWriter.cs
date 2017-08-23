@@ -11,7 +11,7 @@ namespace Xunit.ScenarioReporting
     class OutputController
     {
         private readonly IReportConfiguration _configuration;
-        
+
         private readonly XmlWriter _xw;
         private readonly FileStream _fileStream;
         private readonly StreamWriter _sw;
@@ -134,7 +134,7 @@ namespace Xunit.ScenarioReporting
     {
         private readonly XmlWriter _output;
         private readonly IReadOnlyDictionary<Type, Func<XmlWriter, ReportItem, Task>> _handlers;
-        
+
         public ReportWriter(XmlWriter output)
         {
             _handlers = new Dictionary<Type, Func<XmlWriter, ReportItem, Task>>()
@@ -175,7 +175,7 @@ namespace Xunit.ScenarioReporting
             await writer.WriteElementStringAsync(null, XmlTagName, null, start.Name);
 
         }
-        
+
 
         private async Task Given(XmlWriter writer, ReportItem item)
         {
@@ -204,65 +204,64 @@ namespace Xunit.ScenarioReporting
             await WriteDetails(writer, when.Title, when.Details);
             await writer.WriteEndElementAsync();
         }
-        
+
         private static async Task WriteDetails(XmlWriter writer, string title, IReadOnlyList<Scenario.ReportEntry.Detail> details)
         {
             await writer.WriteElementStringAsync(null, XmlTagTitle, null, title);
-            
+
             foreach (var detail in details)
             {
                 await writer.WriteStartElementAsync(null, XmlTagDetail, null);
 
                 if (detail is Scenario.ReportEntry.Failure || detail is Scenario.ReportEntry.Mismatch)
                 {
-                    //TODO: This could be an an xml error tag => update xsl and css 
-                    //await writer.WriteLineAsync($"{Bold}FAILED {detail.Name}{Bold}");
-                    await writer.WriteElementStringAsync(null, XmlTagMessage, null, "FAILED");
+                    //await writer.WriteElementStringAsync(null, XMLTagMessage, null, "FAILED " + " " + detail.Name);
+                    await writer.WriteElementStringAsync(null, XmlTagFailure, null, detail.Name);
 
                 }
-                    if (detail.Formatter != null)
-                    {
-                        //await writer.WriteLineAsync($"{Bold}{detail.Name} {Italic}{detail.Formatter(detail.Value)}{Italic}{Bold}");
-                        //TODO: This test case not tested
-                        //TODO: Might want to output as seperate tagged elements
-                        
-                        await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + detail.Formatter(detail.Value));
-                        var mismatch = detail as Scenario.ReportEntry.Mismatch;
-                        if (mismatch != null)
-                        {
-                            await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + mismatch.Formatter(mismatch.Actual));
-                        }
+                if (detail.Formatter != null)
+                {
+                    //await writer.WriteLineAsync($"{Bold}{detail.Name} {Italic}{detail.Formatter(detail.Value)}{Italic}{Bold}");
+                    //TODO: This test case not tested
+                    //TODO: Might want to output as seperate tagged elements
 
+                    await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + detail.Formatter(detail.Value));
+                    var mismatch = detail as Scenario.ReportEntry.Mismatch;
+                    if (mismatch != null)
+                    {
+                        await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + mismatch.Formatter(mismatch.Actual));
                     }
-                    else if (detail.Format != null)
-                    {
-                        // var formatString = $"{Bold}{detail.Name} {Italic}{{0:{detail.Format}}}{Italic}{Bold}";
-                        //await writer.WriteLineAsync(string.Format(formatString, detail.Value));
-                        //TODO: This test case not tested
-                        //TODO: {0:{detail.Format}?
-                        //TODO: Might want to output as separate tagged elements
-                        await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + string.Format(detail.Format, detail.Value));
-                        var mismatch = detail as Scenario.ReportEntry.Mismatch;
-                        if (mismatch != null)
-                        {
-                            await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + string.Format(detail.Format, mismatch.Actual));
-                        }
+
                 }
-                    else
+                else if (detail.Format != null)
+                {
+                    // var formatString = $"{Bold}{detail.Name} {Italic}{{0:{detail.Format}}}{Italic}{Bold}";
+                    //await writer.WriteLineAsync(string.Format(formatString, detail.Value));
+                    //TODO: This test case not tested
+                    //TODO: {0:{detail.Format}?
+                    //TODO: Might want to output as separate tagged elements
+                    await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + string.Format(detail.Format, detail.Value));
+                    var mismatch = detail as Scenario.ReportEntry.Mismatch;
+                    if (mismatch != null)
                     {
-                        //await writer.WriteLineAsync($"{Bold}{detail.Name} {Italic}{detail.Value}{Italic}{Bold}");
-                        //TODO: Might want to output as seperate tagged elements
-                        await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + detail.Value);
-                        var mismatch = detail as Scenario.ReportEntry.Mismatch;
-                        if (mismatch != null)
-                        {
-                            await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + mismatch.Actual);
-                        }
+                        await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + string.Format(detail.Format, mismatch.Actual));
+                    }
                 }
-                
+                else
+                {
+                    //await writer.WriteLineAsync($"{Bold}{detail.Name} {Italic}{detail.Value}{Italic}{Bold}");
+                    //TODO: Might want to output as seperate tagged elements
+                    await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + detail.Value);
+                    var mismatch = detail as Scenario.ReportEntry.Mismatch;
+                    if (mismatch != null)
+                    {
+                        await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + mismatch.Actual);
+                    }
+                }
+
                 await writer.WriteEndElementAsync();
             }
-           //await writer.WriteEndElementAsync();
+            //await writer.WriteEndElementAsync();
         }
 
         private async Task EndScenario(XmlWriter writer, ReportItem item)
@@ -278,9 +277,9 @@ namespace Xunit.ScenarioReporting
 
             await writer.WriteEndDocumentAsync();
             await writer.FlushAsync();
-            
+
         }
-        
+
         public async Task Write(ReportItem item)
         {
             Func<XmlWriter, ReportItem, Task> handler;

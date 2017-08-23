@@ -1,7 +1,8 @@
-<html>
+﻿<html>
   <head>
     <META http-equiv="Content-Type" content="text/html; charset=utf-8">
     <!--<link rel="stylesheet" type="text/css" href="ScenarioReportingTests.css">-->
+
 	<style>
 		@import url('https://fonts.googleapis.com/css?family=Raleway');
 
@@ -39,7 +40,6 @@
 		.report-assembly {
 			padding:1em;
 			background-color:#96929F; 
-			/*#e2fbf5 #7fd2bf;*/
 		}
 		.report-header,
 		.report-header a {
@@ -94,8 +94,46 @@
 		.assembly-name,
 		.assembly-timestamp {
 			font-weight:bold;
-		}	
+		}
+
+
+        .menu .menu-item .status-failure {
+            color:crimson;
+        }
+
+        .section-scenario.status-failure {
+            border-left: 0.4em solid crimson;
+        }
+        .section-then.status-failure {
+            border-left: 0.2em solid crimson;
+            padding-left: 0.5em;
+        }
+
+        .icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            stroke-width: 0;
+            stroke: currentColor;
+            fill: currentColor;
+        }
+        .icon-lemon-2 {
+            font-size: 1.6em;
+        }
 	</style>
   </head>
-  <body>
-  
+  <body>  
+    <svg style="position: absolute; width: 0; height: 0; overflow: hidden" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 512 512" xml:space="preserve">
+        <defs>
+            <symbol id="icon-lemon-2" viewBox="0 0 512 512">
+            <path style="fill:#F4DE3B;" d="M452.541,261.129c0-100.923-63.981-185.539-150.123-208.285c0.254-1.975,0.399-3.985,0.399-6.029
+	            C302.816,20.961,281.856,0,256.001,0s-46.816,20.961-46.816,46.817c0,2.044,0.145,4.054,0.399,6.029
+	            C123.441,75.592,59.459,160.206,59.459,261.129c0,100.844,63.881,185.405,149.921,208.231c2.116,23.896,22.175,42.635,46.621,42.635
+	            s44.505-18.739,46.621-42.635C388.66,446.534,452.541,361.973,452.541,261.129z" />
+            <path style="fill:#D6BD27;" d="M256.004,512c-24.446,0-44.503-18.748-46.621-42.643C123.341,446.528,59.46,361.974,59.46,261.136
+	            c0-100.928,63.983-185.546,150.129-208.286c-0.257-1.976-0.411-3.991-0.411-6.031c0-25.858,20.968-46.813,46.826-46.813
+	            c-8.957,0-16.22,20.956-16.22,46.813c0,2.04,0.051,4.055,0.141,6.031c-29.823,22.739-51.985,107.357-51.985,208.286
+	            c0,100.839,22.123,185.392,51.921,208.222C240.593,493.252,247.535,512,256.004,512z" />
+            </symbol>
+        </defs>
+    </svg>
