@@ -6,11 +6,11 @@
 
 		<div class="report-header">
         <h2><a name="top">Here's what happened</a></h2>
-        <p>Looking at Assembly <span class="assembly-name"><xsl:value-of select="Assembly/Name"/></span> of <span class="assembly-timestamp"><xsl:value-of select="Assembly/Time"/></span> with the following Definitions.</p>
+        <p>Looking at Assembly <span class="assembly-name"><xsl:value-of select="Assembly/Name"/></span> of <span class="assembly-timestamp"><xsl:value-of select="Assembly/Time"/></span> with the following Scenarios.</p>
         <xsl:variable name="cntDefinition" select="count(Assembly/Definition)" />
-		<p><xsl:value-of select="$cntDefinition" /> Definition(s):</p>
+		<p><xsl:value-of select="$cntDefinition" /> Scenario(s):</p>
 		<xsl:if test="$cntDefinition = 0">
-			<p>[There are no scenarios.]</p>
+			<p>[There are no Scenarios.]</p>
     </xsl:if>
 		
 		<xsl:if test="$cntDefinition > 0">
@@ -38,7 +38,7 @@
           <!--::THERE IS A FAILURE::-->
         </xsl:if>
 
-        <h3>Definition</h3>
+        <h3>Scenario</h3>
         <p>Name: <xsl:value-of select="Name"/></p>
 
 				<div class="section-givens">

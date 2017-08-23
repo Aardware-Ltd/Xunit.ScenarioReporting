@@ -4,13 +4,13 @@
 <xsl:preserve-space elements="*"/>
 <xsl:template match="/">
   ## <a name="top">Here's what happened</a>
-  Looking at Assembly **<xsl:value-of select="Assembly/Name"/>** of **<xsl:value-of select="Assembly/Time"/>** with the following Definitions.  
+  Looking at Assembly **<xsl:value-of select="Assembly/Name"/>** of **<xsl:value-of select="Assembly/Time"/>** with the following Scenarios.  
   
   <xsl:variable name="cntDefinition" select="count(Assembly/Definition)" />
   
-  <xsl:value-of select="$cntDefinition" /> Definition(s):
+  <xsl:value-of select="$cntDefinition" /> Scenarios(s):
   <xsl:if test="$cntDefinition = 0">
-    [There are no scenarios.]
+    [There are no Scenarios.]
   </xsl:if>
 		
   <xsl:if test="$cntDefinition > 0">
@@ -23,7 +23,7 @@
   
   <xsl:for-each select="Assembly/Definition">
 
-  ### <a name="{generate-id(Name)}">Definition</a>
+  ### <a name="{generate-id(Name)}">Scenario</a>
   Name: <xsl:value-of select="Name"/>
 
   #### Given
