@@ -13,6 +13,8 @@ namespace Xunit.ScenarioReporting
     internal class ScenarioReportingXunitTestAssemblyRunner : XunitTestAssemblyRunner
     {
         private ScenarioReport _scenarioReport;
+        private OutputController _controller;
+
         public ScenarioReportingXunitTestAssemblyRunner(ITestAssembly testAssembly,
                                                           IEnumerable<IXunitTestCase> testCases,
                                                           IMessageSink diagnosticMessageSink,
@@ -35,35 +37,16 @@ namespace Xunit.ScenarioReporting
                     var assemblyName = new AssemblyName(name);
                     name = assemblyName.Name;
                 }
-                if (TestAssembly.Assembly.AssemblyPath == null && TestAssembly.ConfigFileName == null)
-                {
-                    _scenarioReport = new ScenarioReport(name,new NullWriter());
-                    return;
-                }
-
-                // var path = GetOutputPath(TestAssembly.Assembly.AssemblyPath, TestAssembly.ConfigFileName);                
-                _scenarioReport = new ScenarioReport(name, new ReportWriter(TestAssembly.Assembly.AssemblyPath, TestAssembly.ConfigFileName));
+         
+                var configuration = new ReportConfiguration(name, Directory.GetCurrentDirectory(), TestAssembly.Assembly.AssemblyPath, TestAssembly.ConfigFileName);
+                _controller = new OutputController(configuration);
+                _scenarioReport = _controller.Report;
             });
-        }
-        class NullWriter : IReportWriter {
-            public Task Write(ReportItem item)
-            {
-                return Task.CompletedTask;
-            }
-        }
-        static string GetOutputPath(string assemblyPath, string configFilePath)
-        {
-            if (configFilePath != null && ! string.Equals(Path.GetFileName(configFilePath), "xunit.console.exe.Config", StringComparison.InvariantCultureIgnoreCase))
-            {
-                //TODO: try load config to see if it has an output path
-                return Path.GetDirectoryName(configFilePath);
-            }
-            return Path.GetDirectoryName(assemblyPath);
         }
 
         protected override async Task BeforeTestAssemblyFinishedAsync()
         {
-            await _scenarioReport.WriteFinalAsync();
+            await _controller.Complete();
             await base.BeforeTestAssemblyFinishedAsync();
         }
 

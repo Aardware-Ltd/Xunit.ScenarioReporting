@@ -1,7 +1,7 @@
 using Xunit;
 using Xunit.Abstractions;
 
-namespace ScenarioReportingTests
+namespace Examples
 {
     public class ClassScenarioFixtureExample : IClassFixture<ExampleScenario>
     {

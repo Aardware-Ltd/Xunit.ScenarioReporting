@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit.ScenarioReporting;
 
-namespace ScenarioReportingTests
+namespace Examples
 {
     public class CoffeeShopTests
     {
@@ -16,7 +14,7 @@ namespace ScenarioReportingTests
             return new CoffeeShopScenario().Define(def => def
                 .Given(new CoffeeReceived(Guid.NewGuid(), 10), new MilkReceived(Guid.NewGuid(), 10))
                 .When(new MakeFlatWhite(Guid.NewGuid()))
-                .Then(new CoffeeUsed(Guid.NewGuid(), 2), new MilkUsed(Guid.NewGuid(), 4)));
+                .Then(new CoffeeUsed(Guid.NewGuid(), 2), new MilkUsed(Guid.NewGuid(), 2)));
         }
 
         class CoffeeShopScenario : ReflectionBasedScenario<Event, Command, Event>
@@ -34,10 +32,10 @@ namespace ScenarioReportingTests
                     [typeof(DeliverCoffee)] = c => _shop.ReceiveCoffee(((DeliverCoffee)c).Amount),
                     [typeof(DeliverMilk)] = c => _shop.ReceiveCoffee(((DeliverMilk)c).Amount)
                 };
-                
+
             }
 
-            protected override IReadOnlyList<string> IgnoredProperties => new[] {"Id"};
+            protected override IReadOnlyList<string> IgnoredProperties => new[] { "Id" };
 
             protected override Task Given(IReadOnlyList<Event> givens)
             {
@@ -184,13 +182,15 @@ namespace ScenarioReportingTests
             }
         }
 
-        class MakeAmericano : Command {
+        class MakeAmericano : Command
+        {
             public MakeAmericano(Guid id) : base(id)
             {
             }
         }
 
-        class DeliverCoffee : Command {
+        class DeliverCoffee : Command
+        {
             public int Amount { get; }
 
             public DeliverCoffee(Guid id, int amount) : base(id)
@@ -199,7 +199,8 @@ namespace ScenarioReportingTests
             }
         }
 
-        class DeliverMilk : Command {
+        class DeliverMilk : Command
+        {
 
             public int Amount { get; }
             public DeliverMilk(Guid id, int amount) : base(id)
@@ -223,7 +224,7 @@ namespace ScenarioReportingTests
             {
                 Amount = amount;
             }
-            public int Amount { get; set; }
+            public int Amount { get; }
         }
 
         class MilkReceived : Event
@@ -247,3 +248,5 @@ namespace ScenarioReportingTests
         }
     }
 }
+
+

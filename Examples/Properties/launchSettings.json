@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Examples": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "XUNITSCENARIOREPORTING_Foo": "Test",
+        "XUNITSCENARIOREPORTING_APPSETTINGS:GENERATEHTMLREPORT": "True"
+      }
+    }
+  }
+}

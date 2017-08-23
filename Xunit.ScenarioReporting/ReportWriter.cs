@@ -5,42 +5,25 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Xsl;
 using System.Reflection;
-
+using static Xunit.ScenarioReporting.Constants;
 namespace Xunit.ScenarioReporting
 {
-    class ReportWriter : IReportWriter
+    class OutputController
     {
+        private readonly IReportConfiguration _configuration;
+        
+        private readonly XmlWriter _xw;
         private readonly FileStream _fileStream;
         private readonly StreamWriter _sw;
-        private readonly XmlWriter _xw;
-        private readonly IReadOnlyDictionary<Type, Func<XmlWriter, ReportItem, Task>> _handlers;
-        private readonly bool _generateHtmlReport;
-        private readonly bool _generateMarkdownReport;
-        private readonly string _targetHtmlReportFile;
-        private readonly string _targetMarkdownReportFile;
-        private readonly string _targetXmlReportFile;
 
-        public ReportWriter(string assemblyFullPathName, string assemblyConfigFullPathName)
+        public OutputController(IReportConfiguration configuration)
         {
-            _handlers = new Dictionary<Type, Func<XmlWriter, ReportItem, Task>>()
+            _configuration = configuration;
+            if (!configuration.WriteOutput)
             {
-                [typeof(StartReport)] = this.StartReport,
-                [typeof(EndReport)] = this.EndReport,
-                [typeof(StartScenario)] = this.StartScenario,
-                [typeof(EndScenario)] = this.EndScenario,
-                [typeof(Scenario.ReportEntry.Given)] = this.Given,
-                [typeof(Scenario.ReportEntry.When)] = this.When,
-                [typeof(Scenario.ReportEntry.Then)] = this.Then,
-                [typeof(Scenario.ReportEntry.Assertion)] = this.Then,
-            };
-            ReportConfiguration rc = new ReportConfiguration(assemblyFullPathName, assemblyConfigFullPathName);
-            _generateHtmlReport = rc.GetGenerateHtmlReport();
-            _generateMarkdownReport = rc.GetGenerateMarkdownReport();
-            _targetHtmlReportFile = rc.GetTargetHtmlReportFile();
-            _targetMarkdownReportFile = rc.GetTargetMarkdownReportFile();
-            _targetXmlReportFile = rc.GetTargetXmlReportFile();
-
-            _fileStream = new FileStream(_targetXmlReportFile, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
+                Report = new ScenarioReport(configuration.AssemblyName, new NullWriter());
+            }
+            _fileStream = new FileStream(configuration.XmlReportFile, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
 
             _sw = new StreamWriter(_fileStream);
 
@@ -48,7 +31,31 @@ namespace Xunit.ScenarioReporting
             xws.Async = true;
             _xw = XmlWriter.Create(_sw, xws);
 
+            var writer = new ReportWriter(_xw);
+            Report = new ScenarioReport(configuration.AssemblyName, writer);
+        }
 
+        public ScenarioReport Report { get; }
+
+        public async Task Complete()
+        {
+            await Report.WriteFinalAsync();
+            _xw.Close();
+            _xw.Dispose();
+
+            await _sw.FlushAsync();
+            _sw.Dispose();
+            _fileStream.Dispose();
+
+            if (_configuration.WriteHtml)
+            {
+                await WriteHTML(_configuration.XmlReportFile, _configuration.HtmlReportFile);
+            }
+
+            if (_configuration.WriteMarkdown)
+            {
+                WriteMarkdown(_configuration.XmlReportFile, _configuration.MarkdownReportFile);
+            }
         }
 
         private void WriteMarkdown(string reportBaseFile, string reportFile)
@@ -77,17 +84,18 @@ namespace Xunit.ScenarioReporting
 
         private async Task WriteHTML(string reportBaseFile, string reportFile)
         {
-            if (File.Exists(reportBaseFile)) {
+            if (File.Exists(reportBaseFile))
+            {
 
                 Assembly assembly = GetType().Assembly;
 
                 //prep needed report components
-                Stream sReportHeader = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + ReportPath + "." + ReportAssemblyOverviewHTMLHeader);
-                Stream sReportContent = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + ReportPath + "." + ReportAssemblyOverviewHTMLContent);
+                Stream sReportHeader = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + ReportPath + "." + ReportAssemblyOverviewHtmlHeader);
+                Stream sReportContent = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + ReportPath + "." + ReportAssemblyOverviewHtmlContent);
                 XmlReader xrReportContent = XmlReader.Create(sReportContent);
                 XslCompiledTransform xctReportContent = new XslCompiledTransform();
                 xctReportContent.Load(xrReportContent);
-                Stream sReportFooter = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + ReportPath + "." + ReportAssemblyOverviewHTMLFooter);
+                Stream sReportFooter = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + ReportPath + "." + ReportAssemblyOverviewHtmlFooter);
 
                 //generate report
                 Stream sReportOutput = new FileStream(reportFile, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
@@ -102,20 +110,59 @@ namespace Xunit.ScenarioReporting
 
         }
 
+        class NullWriter : IReportWriter
+        {
+            public Task Write(ReportItem item)
+            {
+                return Task.CompletedTask;
+            }
+        }
+
+    }
+
+    interface IReportConfiguration
+    {
+        bool WriteOutput { get; }
+        string XmlReportFile { get; }
+        bool WriteHtml { get; }
+        bool WriteMarkdown { get; }
+        string HtmlReportFile { get; }
+        string MarkdownReportFile { get; }
+        string AssemblyName { get; }
+    }
+    class ReportWriter : IReportWriter
+    {
+        private readonly XmlWriter _output;
+        private readonly IReadOnlyDictionary<Type, Func<XmlWriter, ReportItem, Task>> _handlers;
+        
+        public ReportWriter(XmlWriter output)
+        {
+            _handlers = new Dictionary<Type, Func<XmlWriter, ReportItem, Task>>()
+            {
+                [typeof(StartReport)] = this.StartReport,
+                [typeof(EndReport)] = this.EndReport,
+                [typeof(StartScenario)] = this.StartScenario,
+                [typeof(EndScenario)] = this.EndScenario,
+                [typeof(Scenario.ReportEntry.Given)] = this.Given,
+                [typeof(Scenario.ReportEntry.When)] = this.When,
+                [typeof(Scenario.ReportEntry.Then)] = this.Then,
+                [typeof(Scenario.ReportEntry.Assertion)] = this.Then,
+            };
+
+            _output = output;
+        }
+
+
         private async Task StartReport(XmlWriter writer, ReportItem item)
         {
             var start = (StartReport)item;
-            //await writer.WriteLineAsync($"{H1} {start.ReportName}");
-            //await writer.WriteLineAsync($"Run at {Bold} {start.ReportTime:R} {Bold}");
-            //await writer.WriteLineAsync();
-            //await writer.WriteLineAsync();
             await writer.WriteStartDocumentAsync();
 
-            await writer.WriteStartElementAsync(null, XMLTagAssembly, null);
+            await writer.WriteStartElementAsync(null, XmlTagAssembly, null);
 
-            await writer.WriteElementStringAsync(null, XMLTagName, null, start.ReportName);
+            await writer.WriteElementStringAsync(null, XmlTagName, null, start.ReportName);
 
-            await writer.WriteElementStringAsync(null, XMLTagTime, null, start.ReportTime.ToString());
+            await writer.WriteElementStringAsync(null, XmlTagTime, null, start.ReportTime.ToString());
 
         }
 
@@ -123,9 +170,9 @@ namespace Xunit.ScenarioReporting
         {
             var start = (StartScenario)item;
             //await writer.WriteLineAsync($"{H2} {start.Name}");
-            await writer.WriteStartElementAsync(null, XMLTagScenario, null);
+            await writer.WriteStartElementAsync(null, XmlTagScenario, null);
 
-            await writer.WriteElementStringAsync(null, XMLTagName, null, start.Name);
+            await writer.WriteElementStringAsync(null, XmlTagName, null, start.Name);
 
         }
         
@@ -134,7 +181,7 @@ namespace Xunit.ScenarioReporting
         {
             var given = (Scenario.ReportEntry.Given)item;
             //await writer.WriteLineAsync($"{H4} {given.Title}");
-            await writer.WriteStartElementAsync(null, XMLTagGiven, null);
+            await writer.WriteStartElementAsync(null, XmlTagGiven, null);
             await WriteDetails(writer, given.Title, given.Details);
             await writer.WriteEndElementAsync();
         }
@@ -143,7 +190,7 @@ namespace Xunit.ScenarioReporting
         {
             var then = (Scenario.ReportEntry.Then)item;
             //await writer.WriteLineAsync($"{H4} {then.Title}");
-            await writer.WriteStartElementAsync(null, XMLTagThen, null);
+            await writer.WriteStartElementAsync(null, XmlTagThen, null);
             await WriteDetails(writer, then.Title, then.Details);
             await writer.WriteEndElementAsync();
         }
@@ -153,48 +200,39 @@ namespace Xunit.ScenarioReporting
             var when = (Scenario.ReportEntry.When)item;
             //await writer.WriteLineAsync($"{H4} When ");
             //await writer.WriteLineAsync($"{H4} {when.Title}");
-            await writer.WriteStartElementAsync(null, XMLTagWhen, null);
+            await writer.WriteStartElementAsync(null, XmlTagWhen, null);
             await WriteDetails(writer, when.Title, when.Details);
             await writer.WriteEndElementAsync();
         }
         
         private static async Task WriteDetails(XmlWriter writer, string title, IReadOnlyList<Scenario.ReportEntry.Detail> details)
         {
-            await writer.WriteElementStringAsync(null, XMLTagTitle, null, title);
-
-            bool isFirst = true;
+            await writer.WriteElementStringAsync(null, XmlTagTitle, null, title);
+            
             foreach (var detail in details)
             {
-                await writer.WriteStartElementAsync(null, XMLTagDetail, null);
+                await writer.WriteStartElementAsync(null, XmlTagDetail, null);
 
-                if (detail is Scenario.ReportEntry.Failure)
+                if (detail is Scenario.ReportEntry.Failure || detail is Scenario.ReportEntry.Mismatch)
                 {
                     //TODO: This could be an an xml error tag => update xsl and css 
                     //await writer.WriteLineAsync($"{Bold}FAILED {detail.Name}{Bold}");
-                    await writer.WriteElementStringAsync(null, XMLTagMessage, null, "FAILED " + " " + detail.Name);
+                    await writer.WriteElementStringAsync(null, XmlTagMessage, null, "FAILED");
 
-                } else { 
-                            
-                    if (!isFirst)
-                    {
-                        //TODO: Not data. Exclude from xml. Should be added to report generators
-                        //await writer.WriteAsync($"and ");
-                        //await writer.WriteElementStringAsync(null, "Message", null, "and");
-                    }
-                    else
-                    {
-                        //TODO: Not data. Exclude from xml. Should be added to report generators
-                        isFirst = false;
-                        //await writer.WriteAsync($"with ");
-                        await writer.WriteElementStringAsync(null, XMLTagMessage, null, "with");
-
-                    }
+                }
                     if (detail.Formatter != null)
                     {
                         //await writer.WriteLineAsync($"{Bold}{detail.Name} {Italic}{detail.Formatter(detail.Value)}{Italic}{Bold}");
                         //TODO: This test case not tested
                         //TODO: Might want to output as seperate tagged elements
-                        await writer.WriteElementStringAsync(null, XMLTagMessage, null, detail.Name + " " + detail.Formatter(detail.Value));
+                        
+                        await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + detail.Formatter(detail.Value));
+                        var mismatch = detail as Scenario.ReportEntry.Mismatch;
+                        if (mismatch != null)
+                        {
+                            await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + mismatch.Formatter(mismatch.Actual));
+                        }
+
                     }
                     else if (detail.Format != null)
                     {
@@ -203,16 +241,25 @@ namespace Xunit.ScenarioReporting
                         //TODO: This test case not tested
                         //TODO: {0:{detail.Format}?
                         //TODO: Might want to output as separate tagged elements
-                        await writer.WriteElementStringAsync(null, XMLTagMessage, null, detail.Name + " " + string.Format(detail.Format, detail.Value));
-                    }
+                        await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + string.Format(detail.Format, detail.Value));
+                        var mismatch = detail as Scenario.ReportEntry.Mismatch;
+                        if (mismatch != null)
+                        {
+                            await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + string.Format(detail.Format, mismatch.Actual));
+                        }
+                }
                     else
                     {
                         //await writer.WriteLineAsync($"{Bold}{detail.Name} {Italic}{detail.Value}{Italic}{Bold}");
                         //TODO: Might want to output as seperate tagged elements
-                        await writer.WriteElementStringAsync(null, XMLTagMessage, null, detail.Name + " " + detail.Value);
-
-                    }
+                        await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + detail.Value);
+                        var mismatch = detail as Scenario.ReportEntry.Mismatch;
+                        if (mismatch != null)
+                        {
+                            await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + mismatch.Actual);
+                        }
                 }
+                
                 await writer.WriteEndElementAsync();
             }
            //await writer.WriteEndElementAsync();
@@ -230,61 +277,21 @@ namespace Xunit.ScenarioReporting
             await writer.WriteEndElementAsync();
 
             await writer.WriteEndDocumentAsync();
+            await writer.FlushAsync();
             
-            writer.Close();
-            writer.Dispose();
-
-            await _sw.FlushAsync();
-            _sw.Dispose();
-            _fileStream.Dispose();
-
-            if (_generateHtmlReport) {
-                await WriteHTML(_targetXmlReportFile, _targetHtmlReportFile);
-            }
-
-            if (_generateMarkdownReport)
-            {
-                WriteMarkdown(_targetXmlReportFile, _targetMarkdownReportFile);
-            }
-
         }
         
-
         public async Task Write(ReportItem item)
         {
             Func<XmlWriter, ReportItem, Task> handler;
             if (_handlers.TryGetValue(item.GetType(), out handler))
             {
-                await handler(_xw, item);
+                await handler(_output, item);
             }
             else
             {
                 throw new InvalidOperationException($"Unsupported report item of type {item.GetType().FullName}");
             }
         }
-
-        public const string XMLTagAssembly = "Assembly";
-        public const string XMLTagName = "Name";
-        public const string XMLTagTime = "Time";
-        public const string XMLTagScenario = "Definition";
-        public const string XMLTagGiven = "Given";
-        public const string XMLTagThen = "Then";
-        public const string XMLTagWhen = "When";
-        public const string XMLTagDetails = "Details";
-        public const string XMLTagTitle = "Title";
-        public const string XMLTagDetail = "Detail";
-        public const string XMLTagMessage = "Message";
-        public const string ReportAssemblyOverviewHTMLHeader = "ReportAssemblyOverviewHTMLHeader.html";
-        public const string ReportAssemblyOverviewHTMLContent = "ReportAssemblyOverviewHTMLContent.xslt";
-        public const string ReportAssemblyOverviewHTMLFooter = "ReportAssemblyOverviewHTMLFooter.html";
-        public const string ReportAssemblyOverviewHTML = "ReportAssemblyOverview.html";
-        public const string ReportAssemblyOverviewMarkdownContent = "ReportAssemblyOverviewMarkdownContent.xslt";
-        public const string ReportAssemblyOverviewMarkdown = "ReportAssemblyOverview.md";
-        public const string ReportPath = "Reports";
-
-
-
-
-
     }
 }

@@ -1,15 +1,9 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using ScenarioReportingTests.ExampleDomain;
-using Xunit;
+using Examples.ExampleDomain;
 using Xunit.ScenarioReporting;
 
-[assembly: TestFramework("Xunit.ScenarioReporting.ScenarioReportingXunitTestFramework", "Xunit.ScenarioReporting")]
-
-namespace ScenarioReportingTests
+namespace Examples
 {
     public class ExampleScenario : ReflectionBasedScenario<object, object, object>
     {

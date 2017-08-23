@@ -26,7 +26,7 @@ namespace Xunit.ScenarioReporting
         protected override Task<decimal> InvokeTestMethodAsync(ExceptionAggregator aggregator)
         {
             return new ScenarioReportingTestInvoker(_scenario, _report, Test, MessageBus, TestClass, ConstructorArguments,
-                TestMethod, TestMethodArguments, BeforeAfterAttributes, new ExceptionAggregator(aggregator),
+                TestMethod, TestMethodArguments, BeforeAfterAttributes, aggregator,
                 CancellationTokenSource).RunAsync();
         }
     }

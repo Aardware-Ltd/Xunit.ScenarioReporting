@@ -1,4 +1,4 @@
-﻿namespace ScenarioReportingTests.ExampleDomain
+﻿namespace Examples.ExampleDomain
 {
     class Number
     {

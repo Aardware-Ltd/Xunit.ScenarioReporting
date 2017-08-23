@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ScenarioReportingTests.ExampleDomain;
 using Xunit;
 using Xunit.ScenarioReporting;
 
-namespace ScenarioReportingTests
+namespace Examples
 {
     public class ReturnsScenarioFromFact
     {

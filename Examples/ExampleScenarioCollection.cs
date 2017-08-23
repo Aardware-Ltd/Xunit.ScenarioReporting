@@ -1,7 +1,7 @@
 using System.Threading;
 using Xunit;
 
-namespace ScenarioReportingTests
+namespace Examples
 {
     [CollectionDefinition("ExampleScenario")]
     public class ExampleScenarioCollection : ICollectionFixture<

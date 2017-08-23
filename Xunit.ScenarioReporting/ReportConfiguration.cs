@@ -1,154 +1,147 @@
 ﻿using System;
 using System.Configuration;
 using System.IO;
+using System.Linq;
+using System.Xml.Linq;
+using Microsoft.Extensions.Configuration;
 
 namespace Xunit.ScenarioReporting
 {
-    class ReportConfiguration
+    class ReportConfiguration : IReportConfiguration
     {
-        private readonly bool _defaultGenerateHtmlReport;
-        private readonly bool _defaultGenerateMarkdownReport;
-        private readonly string _defaultTargetHtmlReportFile;
-        private readonly string _defaultTargetMarkdownReportFile;
-        private readonly string _defaultTargetXmlReportFile;
-        private readonly string _configFullPathName;
+        public string XmlReportFile { get; }
+        public bool WriteHtml { get; }
+        public bool WriteMarkdown { get; }
+        public string HtmlReportFile { get; }
+        public string MarkdownReportFile { get; }
+        public string AssemblyName { get; }
+
+        public bool WriteOutput { get; }
+        private readonly IConfigurationSection _config;
 
         private const string ReportFileNamePrefix = "Report";
         private const string FileExtensionHtml = "html";
         private const string FileExtensionMarkdown = "md";
         private const string FileExtensionXml = "xml";
 
-        public ReportConfiguration(string assemblyFullPathName, string assemblyConfigFullPathName) {
-            _defaultGenerateHtmlReport = false;
-            _defaultGenerateMarkdownReport = false;
-            string assemblyPath = Path.GetDirectoryName(assemblyFullPathName);
-            string assemblyFile = Path.GetFileName(assemblyFullPathName);
-            _defaultTargetHtmlReportFile = Path.Combine(assemblyPath, ReportFileNamePrefix + Path.ChangeExtension(assemblyFile, FileExtensionHtml));
-            _defaultTargetMarkdownReportFile = Path.Combine(assemblyPath, ReportFileNamePrefix + Path.ChangeExtension(assemblyFile, FileExtensionMarkdown));
-            _defaultTargetXmlReportFile = Path.Combine(assemblyPath, ReportFileNamePrefix + Path.ChangeExtension(assemblyFile, FileExtensionXml));
-            _configFullPathName = assemblyConfigFullPathName;
-        }
-
-        public bool GetGenerateHtmlReport()
+        public ReportConfiguration(string assemblyName, string currentDirectory, string assemblyFullPath, string assemblyConfigFullPath)
         {
-            bool dataParsed = _defaultGenerateHtmlReport;
+            AssemblyName = assemblyName;
 
-            string dataIn = ReadAppSetting("GenerateHtmlReport");
-
-            if (dataIn != String.Empty)
+            if (assemblyFullPath == null && assemblyConfigFullPath == null)
             {
-                if (Boolean.TryParse(dataIn, out dataParsed))
-                {
-                    //dataParsed now has the parsed value, do nothing
-                }
-                else
-                { 
-                    throw new ArgumentException("Configuration file error. True or False expected, '" + dataIn + "'  in appSettings Key GenerateHtmlReport.");
-                }
+                WriteOutput = false;
+                return;
             }
+            WriteOutput = true;
+            if (!Path.IsPathRooted(assemblyFullPath))
+                assemblyFullPath = Path.Combine(currentDirectory, assemblyFullPath);
+            string assemblyPath = Path.GetDirectoryName(assemblyFullPath);
+            string assemblyFile = Path.GetFileName(assemblyFullPath);
 
-            return dataParsed;
+            var configbuilder = new ConfigurationBuilder()
+                .AddJsonFile(Path.Combine(assemblyPath, "appsettings.json"), true)
+                .AddXmlFile(Path.Combine(assemblyPath, "app.config"), true)
+                .AddXmlFile(Path.Combine(assemblyPath, $"{assemblyFile}.config"), true)
+                .AddEnvironmentVariables();
 
-        }
+            var configurationRoot = configbuilder.Build();
+            _config = configurationRoot.GetSection("appSettings");
 
-        public bool GetGenerateMarkdownReport()
-        {
-            bool dataParsed = _defaultGenerateMarkdownReport;
-
-            string dataIn = ReadAppSetting("GenerateMarkdownReport");
-
-            if (dataIn != String.Empty)
-            {
-                if (Boolean.TryParse(dataIn, out dataParsed))
-                {
-                    //dataParsed now has the parsed value, do nothing
-                }
-                else
-                {
-                    throw new ArgumentException("Configuration file error. True or False expected, '" + dataIn + "' in appSettings Key GenerateMarkdownReport.");
-                }
-            }
-
-            return dataParsed;
-
-        }
-
-        public string GetTargetHtmlReportFile()
-        {
-            string dataParsed = _defaultTargetHtmlReportFile;
-
-            string dataIn = ReadAppSetting("TargetHtmlReportFile").Trim();
-
-            if (dataIn != String.Empty)
-            {
-                if (FileLooksValid(dataIn))
-                {
-                    dataParsed = dataIn;
-                }
-                else
-                {
-                    throw new ArgumentException("Configuration file error. Invalid file, '" + dataIn + "' in appSettings Key TargetHtmlReportFile.");
-                }
-            }
-
-            return dataParsed;
-
-        }
-
-        public string GetTargetMarkdownReportFile()
-        {
-            string dataParsed = _defaultTargetMarkdownReportFile;
-
-            string dataIn = ReadAppSetting("TargetMarkdownReportFile").Trim();
-
-            if (dataIn != String.Empty)
-            {
-                if (FileLooksValid(dataIn))
-                {
-                    dataParsed = dataIn;
-                }
-                else
-                {
-                    throw new ArgumentException("Configuration file error. Invalid file, '" + dataIn + "' in appSettings Key TargetMarkdownReportFile.");
-                }
-            }
-
-            return dataParsed;
-
-        }
-
-        public string GetTargetXmlReportFile()
-        {
-            string dataParsed = _defaultTargetXmlReportFile;
-
-            string dataIn = ReadAppSetting("TargetXmlReportFile").Trim();
-
-            if (dataIn != String.Empty)
-            {
-                if (FileLooksValid(dataIn))
-                {
-                    dataParsed = dataIn;
-                }
-                else
-                {
-                    throw new ArgumentException("Configuration file error. Invalid file, '" + dataIn + "' in appSettings Key TargetXmlReportFile.");
-                }
-            }
-
-            return dataParsed;
-
-        }
-
-        private string ReadAppSetting(string appSettingKey)
-        {
-            ExeConfigurationFileMap configFileMap = new ExeConfigurationFileMap();
-            configFileMap.ExeConfigFilename = _configFullPathName;
-            Configuration config = ConfigurationManager.OpenMappedExeConfiguration(configFileMap, ConfigurationUserLevel.None);
-            if (config.AppSettings.Settings[appSettingKey] != null)
-                return config.AppSettings.Settings[appSettingKey].Value;
-            else
-                return String.Empty;
+            XmlReportFile = GetTargetXmlReportFile(@default: DefaultFilePath(assemblyPath, assemblyFile, FileExtensionXml));
             
+            WriteHtml = GetGenerateHtmlReport(@default: IsHtmlPathDefined());
+            HtmlReportFile = GetTargetHtmlReportFile(@default: DefaultFilePath(assemblyPath, assemblyFile, FileExtensionHtml));
+            WriteMarkdown = GetGenerateMarkdownReport(@default: IsMarkdownPathDefined());
+            MarkdownReportFile = GetTargetMarkdownReportFile(@default: DefaultFilePath(assemblyPath, assemblyFile, FileExtensionMarkdown));
+        }
+
+        private static string DefaultFilePath(string assemblyPath, string assemblyFile, string extension)
+        {
+            return Path.Combine(assemblyPath,
+                ReportFileNamePrefix + Path.ChangeExtension(assemblyFile, extension));
+        }
+
+        bool IsHtmlPathDefined()
+        {
+            return _config.GetSection("TargetHtmlReportFile").Exists();
+        }
+
+        bool IsMarkdownPathDefined()
+        {
+            return _config.GetSection("TargetHtmlReportFile").Exists();
+        }
+
+        public bool GetGenerateHtmlReport(bool @default)
+        {
+            bool dataParsed = @default;
+
+            string dataIn = _config["GenerateHtmlReport"];
+
+            if (!string.IsNullOrWhiteSpace(dataIn))
+            {
+                if (!Boolean.TryParse(dataIn, out dataParsed))
+                { 
+                    throw new ArgumentException($"Configuration error. Key: GenerateHtmlReport. True or False expected, actual'{dataIn}'.");
+                }
+            }
+
+            return dataParsed;
+
+        }
+
+        public bool GetGenerateMarkdownReport(bool @default)
+        {
+            bool dataParsed = @default;
+
+            string dataIn = _config["GenerateMarkdownReport"];
+
+            if (!string.IsNullOrWhiteSpace(dataIn))
+            {
+                if (!Boolean.TryParse(dataIn, out dataParsed))
+                {
+                    throw new ArgumentException($"Configuration error. Key: GenerateMarkdownReport. True or False expected, '{dataIn}'");
+                }
+            }
+
+            return dataParsed;
+        }
+
+        public string GetTargetHtmlReportFile(string @default)
+        {
+            return ReadFileSetting("TargetHtmlReportFile", @default);
+        }
+        
+        public string GetTargetMarkdownReportFile(string @default)
+        {
+            return ReadFileSetting("TargetMarkdownReportFile", @default);
+        }
+
+        public string GetTargetXmlReportFile(string @default)
+        {
+            return ReadFileSetting("TargetXmlReportFile", @default);
+        }
+
+        private string ReadFileSetting(string key, string @default)
+        {
+            string dataParsed = @default;
+
+            string dataIn = _config[key];
+
+            if (!string.IsNullOrWhiteSpace(dataIn))
+            {
+                dataIn = dataIn.Trim();
+                if (FileLooksValid(dataIn))
+                {
+                    dataParsed = dataIn;
+                }
+                else
+                {
+                    throw new ArgumentException($"Configuration Error. Key {key} Invalid file, '{dataIn}'");
+                }
+            }
+
+            return dataParsed;
         }
 
         private bool FileLooksValid(String fileName)

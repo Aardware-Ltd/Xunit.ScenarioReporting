@@ -139,17 +139,27 @@ namespace Xunit.ScenarioReporting
             if (_verified || _errored) return;
             try
             {
-                await Initialize();
+                await ((IAsyncLifetime)this).InitializeAsync();
 
                 _verified = true;
                 await Verify();
+
             }
-            catch (Exception e)
+            catch (Exception e) when(!(e is ScenarioVerificationException))
             {
                 _errored = true;
                 AddResult(name, e);
-                throw new ScenarioVerificationException(e);
+                throw;
             }
+
+            var failures = ReportThens().Where(x => x.Details.OfType<ReportEntry.Mismatch>().Any()).Select(x => new ReportEntry.Then(x.Title, x.Details.OfType<ReportEntry.Mismatch>().ToArray())).ToArray();
+            if (failures.Any())
+                throw new ScenarioVerificationException(failures.ToArray());
+        }
+
+        internal Exception VerificationException(ReportEntry.Then[] failures)
+        {
+            return new ScenarioVerificationException(failures);
         }
 
         async Task IAsyncLifetime.DisposeAsync()

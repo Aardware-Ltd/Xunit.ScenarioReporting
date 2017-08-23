@@ -1,11 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.14
+VisualStudioVersion = 15.0.26730.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScenarioReportingTests", "ScenarioReportingTests\ScenarioReportingTests.csproj", "{F69D63B9-FF82-4286-84A8-88A454EA28EE}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xunit.ScenarioReporting", "Xunit.ScenarioReporting\Xunit.ScenarioReporting.csproj", "{696CD9BD-8F1B-42C3-A0DA-0066DCEF9ECC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xunit.ScenarioReporting", "Xunit.ScenarioReporting\Xunit.ScenarioReporting.csproj", "{696CD9BD-8F1B-42C3-A0DA-0066DCEF9ECC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{934088AF-32B1-4921-B8C0-9C89D0B7CA14}"
 	ProjectSection(SolutionItems) = preProject
@@ -18,22 +16,33 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Xunit.ScenarioReporting.nuspec = Xunit.ScenarioReporting.nuspec
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Examples", "Examples\Examples.csproj", "{5AEE97DB-3157-4730-885F-14F2C4F64DAC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xunit.ScenarioReporting.Tests", "Xunit.ScenarioReporting.Tests\Xunit.ScenarioReporting.Tests.csproj", "{E15BD510-1D64-4EB0-B840-28FE87FD43D9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F69D63B9-FF82-4286-84A8-88A454EA28EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F69D63B9-FF82-4286-84A8-88A454EA28EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F69D63B9-FF82-4286-84A8-88A454EA28EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F69D63B9-FF82-4286-84A8-88A454EA28EE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{696CD9BD-8F1B-42C3-A0DA-0066DCEF9ECC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{696CD9BD-8F1B-42C3-A0DA-0066DCEF9ECC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{696CD9BD-8F1B-42C3-A0DA-0066DCEF9ECC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{696CD9BD-8F1B-42C3-A0DA-0066DCEF9ECC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5AEE97DB-3157-4730-885F-14F2C4F64DAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AEE97DB-3157-4730-885F-14F2C4F64DAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5AEE97DB-3157-4730-885F-14F2C4F64DAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5AEE97DB-3157-4730-885F-14F2C4F64DAC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E15BD510-1D64-4EB0-B840-28FE87FD43D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E15BD510-1D64-4EB0-B840-28FE87FD43D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E15BD510-1D64-4EB0-B840-28FE87FD43D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E15BD510-1D64-4EB0-B840-28FE87FD43D9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B54E7424-B069-4128-BB65-67EB0AA7A5B2}
 	EndGlobalSection
 EndGlobal

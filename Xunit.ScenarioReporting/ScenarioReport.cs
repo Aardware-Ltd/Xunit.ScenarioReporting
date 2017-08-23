@@ -114,17 +114,20 @@ namespace Xunit.ScenarioReporting
 
             public void Write(Scenario.ReportEntry.Given given)
             {
-                _batch.Enqueue(given);
+                if(given != null)
+                    _batch.Enqueue(given);
             }
 
             public void Write(Scenario.ReportEntry.When when)
             {
-                _batch.Enqueue(when);
+                if (when != null)
+                    _batch.Enqueue(when);
             }
 
             public void Write(Scenario.ReportEntry.Then then)
             {
-                _batch.Enqueue(then);
+                if(then != null)
+                    _batch.Enqueue(then);
             }
         }
     }

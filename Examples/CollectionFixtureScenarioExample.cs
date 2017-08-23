@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace ScenarioReportingTests
+namespace Examples
 {
     [Collection("ExampleScenario")]
     public class CollectionFixtureScenarioExample

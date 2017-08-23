@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
@@ -12,8 +13,10 @@ namespace Xunit.ScenarioReporting
     {
         private readonly Scenario _scenario;
         private readonly ScenarioReport _report;
+        private MethodInfo _openVerify;
 
-        public ScenarioReportingTestInvoker(Scenario scenario, ScenarioReport report, ITest test, IMessageBus messageBus, Type testClass,
+        public ScenarioReportingTestInvoker(Scenario scenario, ScenarioReport report, ITest test,
+            IMessageBus messageBus, Type testClass,
             object[] constructorArguments, MethodInfo testMethod, object[] testMethodArguments,
             IReadOnlyList<BeforeAfterTestAttribute> beforeAfterAttributes, ExceptionAggregator aggregator,
             CancellationTokenSource cancellationTokenSource) : base(test, messageBus, testClass, constructorArguments,
@@ -21,6 +24,7 @@ namespace Xunit.ScenarioReporting
         {
             _scenario = scenario;
             _report = report;
+            _openVerify = this.GetType().GetMethod(nameof(VerifyAndReport));
         }
 
         protected override object CallTestMethod(object testClassInstance)
@@ -37,11 +41,14 @@ namespace Xunit.ScenarioReporting
                     if (returnType.IsSubclassOf(typeof(Scenario)))
                     {
                         //TODO: collate for scenario report
+                        //Convert to scenario task
+                        var closedVerify = _openVerify.MakeGenericMethod(returnType);
+                        return closedVerify.Invoke(this, new[] {result, DisplayName, TestCase.Method.Name});
                     }
                 }
                 else if (result is Scenario)
                 {
-                    var scenario = (Scenario)result;
+                    var scenario = (Scenario) result;
                     if (scenario.Title == null) scenario.Title = DisplayName;
                     return VerifyAndReportScenario(scenario, TestCase.Method.Name);
                 }
@@ -54,7 +61,7 @@ namespace Xunit.ScenarioReporting
             catch (Exception e)
             {
 
-                if (_scenario != null)
+                if (_scenario != null && !(e is ScenarioVerificationException))
                 {
                     _scenario.AddResult(TestCase.Method.Name, e.Unwrap());
                 }
@@ -74,6 +81,12 @@ namespace Xunit.ScenarioReporting
                 _report.Report(scenario);
             }
 
+        }
+
+        private async Task VerifyAndReport<T>(Task<T> scenarioTask, string name) where T : Scenario
+        {
+            Scenario scenario = await scenarioTask;
+            await VerifyAndReportScenario(scenario, name);
         }
     }
 }
