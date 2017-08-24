@@ -2,12 +2,14 @@ version: 1.0.0.{build}
 
 image: Visual Studio 2017
 
-assembly_info:
+init:
+  - ps: .\scripts\updateversion.ps1
+
+dotnet_csproj:
   patch: true
-  file: AssemblyInfo.*
-  assembly_version: "{version}"
-  assembly_file_version: "{version}"
-  assembly_informational_version: "{appveyor_repo_branch}"
+  file: '**\*.csproj'
+  version: '{version}'
+  package_version: '{version}'
 
 configuration: Release
 
@@ -19,7 +21,7 @@ build:
 
 test_script:  
   - dotnet test Xunit.ScenarioReporting.Tests/Xunit.ScenarioReporting.Tests.csproj --no-build
-  - ps: .\scripts\packagenuget.ps1
+
 
 artifacts: 
   - path: '*.nupkg'

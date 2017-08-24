@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xunit.ScenarioReporting", "
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{934088AF-32B1-4921-B8C0-9C89D0B7CA14}"
 	ProjectSection(SolutionItems) = preProject
-		scripts\packagenuget.ps1 = scripts\packagenuget.ps1
+		scripts\updateversion.ps1 = scripts\updateversion.ps1
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1252352B-2010-49AF-9CD5-CFE5B7DA0ACC}"
@@ -18,7 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Examples", "Examples\Examples.csproj", "{5AEE97DB-3157-4730-885F-14F2C4F64DAC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xunit.ScenarioReporting.Tests", "Xunit.ScenarioReporting.Tests\Xunit.ScenarioReporting.Tests.csproj", "{E15BD510-1D64-4EB0-B840-28FE87FD43D9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xunit.ScenarioReporting.Tests", "Xunit.ScenarioReporting.Tests\Xunit.ScenarioReporting.Tests.csproj", "{E15BD510-1D64-4EB0-B840-28FE87FD43D9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
