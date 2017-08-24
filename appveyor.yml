@@ -17,7 +17,7 @@ before_build:
   - msbuild /t:restore Xunit.ScenarioReporting.sln
 
 build:
-  project:  Xunit.ScenarioReporting.sln
+  project:  Xunit.ScenarioReporting.sln /t:pack
 
 test_script:  
   - dotnet test Xunit.ScenarioReporting.Tests/Xunit.ScenarioReporting.Tests.csproj --no-build

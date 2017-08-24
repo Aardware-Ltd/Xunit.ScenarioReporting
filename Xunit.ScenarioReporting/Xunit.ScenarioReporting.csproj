@@ -37,12 +37,18 @@
     </ItemGroup>
 
     <PropertyGroup>
+        <IsPackable>True</IsPackable>
         <PackageId>Xunit.ScenarioReporting</PackageId>
         <PackageVersion>0.0.1-dev</PackageVersion>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <Title>Xunit Scenario Reporting Framework</Title>
+        <Description>Extension to xunit to produce human readable Given/When/Then reports in xml, markdown and HTML</Description>
+        <Copyright>Copyright 2017</Copyright>
         <PackageTags>Xunit Scenario Reporting</PackageTags>
         <PackageLicenseUrl>https://github.com/jageall/Xunit.ScenarioReporting/blob/master/LICENSE</PackageLicenseUrl>
         <PackageProjectUrl>https://github.com/jageall/Xunit.ScenarioReporting</PackageProjectUrl>
+        <IncludeSymbols>True</IncludeSymbols>
+        <Authors>James Geall</Authors>
     </PropertyGroup>
 
     <ItemGroup>
