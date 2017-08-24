@@ -12,16 +12,13 @@ assembly_info:
 configuration: Release
 
 before_build:
-  - nuget restore Xunit.ScenarioReporting.sln
+  - msbuild /t:restore Xunit.ScenarioReporting.sln
 
 build:
   project:  Xunit.ScenarioReporting.sln
 
-test:
-  assemblies:
-    only:
-      - '**\*.Tests.dll'
-after_test: 
+test_script:  
+  - dotnet test Xunit.ScenarioReporting.Tests/Xunit.ScenarioReporting.Tests.csproj --no-build
   - ps: .\scripts\packagenuget.ps1
 
 artifacts: 
