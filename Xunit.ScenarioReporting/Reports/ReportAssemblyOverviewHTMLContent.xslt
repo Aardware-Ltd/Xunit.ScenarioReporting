@@ -31,16 +31,15 @@
 
         <a name="{generate-id(Name)}"></a>
         <section class="section-scenario">
-
         <xsl:if test="descendant::Failure">
           <xsl:attribute name="class">section-scenario status-failure</xsl:attribute>
-          <svg class="icon icon-lemon-2"><use xlink:href="#icon-lemon-2"></use></svg>
+          <svg class="icon icon-lemon-2 jello animated"><use xlink:href="#icon-lemon-2"></use></svg>
           <!--::THERE IS A FAILURE::-->
         </xsl:if>
 
         <h3>Scenario</h3>
         <p>Name: <xsl:value-of select="Name"/></p>
-
+        <p>Nom de guerre: <xsl:value-of select="NDG"/></p>
 				<div class="section-givens">
 				<h4>Given</h4>
 				<xsl:variable name="cntGivens" select="count(Given)" />
@@ -53,7 +52,12 @@
 						<div class="section-given">
 						<p><xsl:value-of select="Title"/></p><!--Title-->
 						<xsl:if test="Detail != ''" >
-							<p>with <xsl:for-each select="Detail/Message"><xsl:value-of select="concat(., ' ')"/></xsl:for-each ></p><!--Message-->
+							<!--<p>with <xsl:for-each select="Detail/Message"><xsl:value-of select="concat(., ' ')"/></xsl:for-each ></p>--><!--Message-->
+              <p>with 
+              <xsl:for-each select="Detail/.">
+                <xsl:value-of select="Name"/><xsl:text> </xsl:text><xsl:value-of select="Value"/>              
+              </xsl:for-each>
+              </p>
 						</xsl:if>						
 						</div><!--section-given-->
             <!--<xsl:if test="position() != last()"> [and] </xsl:if>-->
@@ -74,8 +78,13 @@
 						<div class="section-when">
 						<p><xsl:value-of select="Title"/></p><!--Title-->
 						<xsl:if test="Detail != ''" >
-							<p>with <xsl:for-each select="Detail/Message"><xsl:value-of select="concat(., ' ')"/></xsl:for-each ></p><!--Message-->
-						</xsl:if>						
+							<!--<p>with <xsl:for-each select="Detail/Message"><xsl:value-of select="concat(., ' ')"/></xsl:for-each ></p>--><!--Message-->
+              <p>with 
+              <xsl:for-each select="Detail/.">
+                <xsl:value-of select="Name"/><xsl:text> </xsl:text><xsl:value-of select="Value"/>              
+              </xsl:for-each>
+              </p>
+            </xsl:if>						
 						</div><!--section-when-->
 					</xsl:for-each >				
 				</xsl:otherwise>
@@ -91,11 +100,13 @@
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:for-each select="Then">
-						<div class="section-then">
+						<div class="section-then"><!--
             <xsl:if test="descendant::Failure">
               <xsl:attribute name="class">section-then status-failure</xsl:attribute>
-            </xsl:if>
+            </xsl:if>-->
 						<p><xsl:value-of select="Title"/></p><!--Title-->
+  
+              <!--
               <xsl:if test="count(Detail/Message) > 0" >
                 <p>with 
                   <xsl:for-each select="Detail/Message">
@@ -103,21 +114,41 @@
                   </xsl:for-each >
                 </p>
               </xsl:if>
+               -->
 
-              <xsl:if test="count(Detail/Failure) > 0" >
-                <p class="status-failure">
-                  <xsl:for-each select="Detail/Failure">
-                    <xsl:value-of select="concat(., ' ')"/>::FAILURE::
+              <xsl:choose>
+                <xsl:when test="count(Detail/Failure) > 0">
+                <div class="status-failure">
+                  <xsl:for-each select="Detail/Failure/Mismatch">
+                    <!--<xsl:value-of select="concat(., ' ')"/>::FAILURE::-->
+                    <p><xsl:value-of select="Name"/> Mismatch:</p>
+                    <ul>
+                      <li>Expected: <xsl:value-of select="Expected/Value"/></li>
+                      <li>Actual: <xsl:value-of select="Actual/Value"/></li>
+                    </ul>
+                    <!--::FAILURE::-->
+                    <svg class="icon icon-error-x"><use xlink:href="#icon-error-x"></use></svg>
                   </xsl:for-each >
-                </p>
-              </xsl:if>
-
+                </div>
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:if test="count(Detail/.) > 0" >
+                    <p>with  
+                      <xsl:for-each select="Detail/.">
+                        <xsl:value-of select="Name"/><xsl:text> </xsl:text><xsl:value-of select="Value"/>              
+                      </xsl:for-each>
+                    </p>
+                  </xsl:if>
+                </xsl:otherwise>              
+              </xsl:choose>
+              
             </div><!--section-then-->
 					</xsl:for-each >
 				</xsl:otherwise>
 				</xsl:choose>
 				</div><!--section-thens-->
 				<p><a href="#top">Back to top</a></p>
+
         </section><!--section-scenario-->
     </xsl:for-each>
 

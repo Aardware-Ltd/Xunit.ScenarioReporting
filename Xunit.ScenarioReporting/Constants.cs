@@ -7,6 +7,9 @@ namespace Xunit.ScenarioReporting
     {
         internal const string XmlTagAssembly = "Assembly";
         internal const string XmlTagName = "Name";
+        internal const string XmlTagValue = "Value";
+        internal const string XmlTagExpected = "Expected";
+        internal const string XmlTagActual = "Actual";
         internal const string XmlTagTime = "Time";
         internal const string XmlTagScenario = "Definition";
         internal const string XmlTagGiven = "Given";
@@ -16,7 +19,12 @@ namespace Xunit.ScenarioReporting
         internal const string XmlTagTitle = "Title";
         internal const string XmlTagDetail = "Detail";
         internal const string XmlTagMessage = "Message";
-        internal const string XmlTagFailure = "Failure";
+
+        //Error reporting
+        internal const string XmlTagFailure = "Failure"; 
+        internal const string XmlTagMismatch = "Mismatch";
+        internal const string XmlTagException = "Exception";
+
         internal const string ReportAssemblyOverviewHtmlHeader = "ReportAssemblyOverviewHTMLHeader.html";
         internal const string ReportAssemblyOverviewHtmlContent = "ReportAssemblyOverviewHTMLContent.xslt";
         internal const string ReportAssemblyOverviewHtmlFooter = "ReportAssemblyOverviewHTMLFooter.html";
