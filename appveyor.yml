@@ -17,14 +17,12 @@ before_build:
   - msbuild /t:restore Xunit.ScenarioReporting.sln
 
 build:
-  project:  Xunit.ScenarioReporting.sln /t:pack
+  project: Xunit.ScenarioReporting.sln
+  publish_nuget: true
+  verbosity: minimal
 
 test_script:  
-  - dotnet test Xunit.ScenarioReporting.Tests/Xunit.ScenarioReporting.Tests.csproj --no-build
-
-
-artifacts: 
-  - path: '*.nupkg'
+  - ps .\scripts\appveyortest.ps1
 
 deploy:
   provider: NuGet
