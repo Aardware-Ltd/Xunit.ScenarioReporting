@@ -37,7 +37,7 @@ namespace Xunit.ScenarioReporting
             ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource)
         {
 
-            var scenario = constructorArguments.OfType<Scenario>().SingleOrDefault();
+            var scenario = constructorArguments.OfType<ScenarioRunner>().SingleOrDefault();
             return new ScenarioReportingXunitTestCaseRunner(scenario, report, this, DisplayName, SkipReason,
                 constructorArguments, TestMethodArguments, messageBus, new ExceptionAggregator(aggregator),
                 cancellationTokenSource).RunAsync();

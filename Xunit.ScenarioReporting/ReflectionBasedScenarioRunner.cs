@@ -8,22 +8,29 @@ using System.Threading.Tasks;
 namespace Xunit.ScenarioReporting
 {
     /// <summary>
-    /// 
+    /// Generates reports using reflection to pull the details from the definition. Applies the Given and When from
+    /// the definition to the subject under test and then verifies the results using reflection.
     /// </summary>
-    /// <typeparam name="TGiven"></typeparam>
-    /// <typeparam name="TWhen"></typeparam>
-    /// <typeparam name="TThen"></typeparam>
-    public abstract class ReflectionBasedScenario<TGiven, TWhen, TThen> : Scenario
+    /// <typeparam name="TGiven">The base class for the Given types</typeparam>
+    /// <typeparam name="TWhen">The base class for the When type</typeparam>
+    /// <typeparam name="TThen">The base class for the Then types</typeparam>
+    /// <remarks>This scenario type should cover most requirements for scenarios. Inherit from this class to define how
+    /// to use the Given/When/Then
+    /// Generally you can provide a single inherited version of this class to run multiple scenarioRunner definitions</remarks>
+    /// <inheritdoc />
+    public abstract class ReflectionBasedScenarioRunner<TGiven, TWhen, TThen> : ScenarioRunner
     {
         /// <summary>
-        /// Provides access to the scenario definition. The preferred way of builidng this is to use the <see cref="ReflectionBasedScenarioExtensions.Define{TGiven,TWhen,TThen}"/>
-        /// method which provids a fluent builder for defining the current scenario.
+        /// Provides access to the scenarioRunner definition. The preferred way of builidng this is to use the <see cref="ReflectionBasedScenarioExtensions.Run{TGiven,TWhen,TThen}"/>
+        /// method which provids a fluent builder for defining the current scenarioRunner.
         /// </summary>
         protected internal ScenarioDefinition Definition { protected get; set; }
+
+        private bool _run;
         private IReadOnlyList<TThen> _actuals;
-        private List<ReportEntry.Then> _thens;
+
         /// <summary>
-        /// Defines the current scenario.
+        /// Provides a definition for the <see cref="ScenarioRunner"/> to run.
         /// </summary>
         protected internal class ScenarioDefinition
         {
@@ -34,17 +41,17 @@ namespace Xunit.ScenarioReporting
                 Then = then;
             }
             /// <summary>
-            /// The givens for the current scenario.
+            /// The givens for the current scenarioRunner.
             /// </summary>
             public IReadOnlyList<TGiven> Given { get; }
 
             /// <summary>
-            /// The when for the current scenario
+            /// The when for the current scenarioRunner
             /// </summary>
             public TWhen When { get; }
 
             /// <summary>
-            /// The expected results from the current scenario.
+            /// The expected results from the current scenarioRunner.
             /// </summary>
             public IReadOnlyList<TThen> Then { get; }
 
@@ -55,7 +62,7 @@ namespace Xunit.ScenarioReporting
                 private ScenarioDefinition _scenarioDefinition;
                 private IReadOnlyList<TGiven> _givens;
                 private TWhen _when;
-                
+
                 public IGiven<TWhen, TThen> Given(params TGiven[] givens)
                 {
                     _givens = givens;
@@ -78,43 +85,54 @@ namespace Xunit.ScenarioReporting
                     return _scenarioDefinition;
                 }
             }
-            
+
         }
 
-        /// <summary>
-        /// Initializes the scenario by executing the steps but does not perform verification
-        /// </summary>
-        /// <returns>A <see cref="Task"/> that completes when the Givens and the whene have been applied.</returns>
-        protected sealed override async Task Initialize()
+        /// <inheritdoc />
+        protected override async Task Run()
         {
-            
-            _thens = new List<ReportEntry.Then>();
-            Definition = await Define();
-            if(Definition == null) 
+            if (Definition == null)
                 throw new InvalidOperationException("Definition is undefined");
+
+            if (_run) return;
+            _run = true;
+            RecordSetup();
             await Given(Definition.Given);
             await When(Definition.When);
             _actuals = await ActualResults();
+            Verify(Definition.Then, _actuals);
         }
 
-        protected abstract Task Given(IReadOnlyList<TGiven> givens);
-        protected abstract Task When(TWhen when);
-        protected abstract Task<IReadOnlyList<TThen>> ActualResults();
-
-        protected virtual Task<ScenarioDefinition> Define()
+        private void RecordSetup()
         {
-            return Task.FromResult(Definition);
+            foreach (var given in Definition.Given)
+            {
+                Report(given, base.RecordGiven);
+            }
+            if (Definition.When != null)
+                Report(Definition.When, RecordWhen);
         }
 
         /// <summary>
-        /// Performs the verification that the actual values collected match the expected Then values
+        /// Applies the given DTOs to the subject under test.
         /// </summary>
-        /// <returns>A task that completes after all expected values have been matched to actual values with none remaining</returns>
-        /// <exception cref="ScenarioVerificationException">Thrown after verification completes if the scenario verification failed.</exception>
-        protected sealed override async Task Verify()
-        {
-            await Verify(Definition.Then, _actuals);
-        }
+        /// <param name="givens">The givens to apply to the scenarioRunner</param>
+        /// <returns>A Task that should be complete only after all the givens have been applied to the 
+        /// subject under test.</returns>
+        protected abstract Task Given(IReadOnlyList<TGiven> givens);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="when"></param>
+        /// <returns></returns>
+        protected abstract Task When(TWhen when);
+
+        /// <summary>
+        /// Retrieves the actual results for verification.
+        /// </summary>
+        /// <returns>A <see cref="Task{TThen}"/> that should complete when the results are available</returns>
+        protected abstract Task<IReadOnlyList<TThen>> ActualResults();
+
         /// <summary>
         /// Allows the ignoring of properties for reporting and comparison
         /// </summary>
@@ -127,7 +145,7 @@ namespace Xunit.ScenarioReporting
         protected virtual IReadOnlyList<string> IgnoredProperties => new string[] { };
 
         /// <summary>
-        /// A custom set of comparers used when verifying the scenario. Can be used to provide non default comparers.
+        /// A custom set of comparers used when verifying the scenarioRunner. Can be used to provide non default comparers.
         /// </summary>
         protected virtual IReadOnlyDictionary<Type, IEqualityComparer> Comparers => new Dictionary<Type, IEqualityComparer>();
         private Dictionary<string, HashSet<string>> _ignoredProperties;
@@ -145,13 +163,12 @@ namespace Xunit.ScenarioReporting
 
                     foreach (var ignored in IgnoredProperties)
                     {
-
                         //TODO: ignore hierarchies or support them? maybe better to use json.net and paths to remove entries we don't like
                         string[] split;
                         if (ignored.Contains("."))
-                            split = ignored.Split(new[] {'.'}, StringSplitOptions.RemoveEmptyEntries);
+                            split = ignored.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
                         else
-                            split = new[] {"*", ignored};
+                            split = new[] { "*", ignored };
                         HashSet<string> properties;
                         if (!ignoredByType.TryGetValue(split[0], out properties))
                         {
@@ -175,95 +192,98 @@ namespace Xunit.ScenarioReporting
             EnsureInitialized();
             return Filter();
         }
-        internal virtual Task<IReadOnlyList<ReportEntry.Then>> Verify(IReadOnlyList<TThen> expected, IReadOnlyList<TThen> actual)
+        internal void Verify(IReadOnlyList<TThen> expected, IReadOnlyList<TThen> actual)
         {
             var maxIterations = Math.Min(expected.Count, actual.Count);
-            
-            
+
+            //TODO: consider walking type tree until primitives
             for (int i = 0; i < maxIterations; i++)
             {
+
                 var e = expected[i];
                 var a = actual[i];
-                if (a.GetType() != e.GetType())
+                RecordThen(e.GetType().Name, details =>
                 {
-                    //fail and skip
-                    _thens.Add(new ReportEntry.Then(e.GetType().Name, new ReportEntry.Detail[]{new ReportEntry.Mismatch("Type", e, a, formatter: Formatters.FromClassName), }));
-                    continue;
-                }
-                HashSet<string> ignored = IgnoredByType(e.GetType());
-                
-                var detail = new List<ReportEntry.Detail>();
-                foreach (var p in e.GetType().GetProperties())
-                {
-                    if(ignored.Contains(p.Name)) continue;
-                    var ev = p.GetValue(e);
-                    var av = p.GetValue(a);
-                    IEqualityComparer comparer;
-                    if (!Comparers.TryGetValue(p.PropertyType, out comparer))
+                    if (a.GetType() != e.GetType())
                     {
-                        comparer = (IEqualityComparer) typeof(EqualityComparer<>).MakeGenericType(p.PropertyType)
-                            .GetProperty("Default", BindingFlags.Static|BindingFlags.Public).GetValue(null);
+
+                        details.Mismatch("Type", e, a, formatter: Formatters.FromClassName);
+
+                        return;
                     }
-                    if (!comparer.Equals(ev, av))
+                    HashSet<string> ignored = IgnoredByType(e.GetType());
+                    
+                    foreach (var p in e.GetType().GetProperties())
                     {
-                        //fail and continue
-                        detail.Add(new ReportEntry.Mismatch(p.Name, ev, av));
+                        if (ignored.Contains(p.Name)) continue;
+                        var ev = p.GetValue(e);
+                        var av = p.GetValue(a);
+                        IEqualityComparer comparer;
+                        if (!Comparers.TryGetValue(p.PropertyType, out comparer))
+                        {
+                            comparer = (IEqualityComparer)typeof(EqualityComparer<>).MakeGenericType(p.PropertyType)
+                                .GetProperty("Default", BindingFlags.Static | BindingFlags.Public).GetValue(null);
+                        }
+                        if (!comparer.Equals(ev, av))
+                        {
+                            //fail and continue
+                            details.Mismatch(p.Name, ev, av);
+                        }
+                        else
+                        {
+                            details.Match(p.Name, ev);
+                        }
                     }
-                    else
-                    {
-                        detail.Add(new ReportEntry.Match(p.Name, ev));
-                    }
-                }
-                _thens.Add(new ReportEntry.Then(e.GetType().Name, detail));
+                });
             }
             if (expected.Count > actual.Count)
             {
                 for (int i = Math.Max(0, actual.Count - 1); i < expected.Count; i++)
                 {
-                    _thens.Add(new ReportEntry.Then("Missing expected results", new ReportEntry.Detail[] { new ReportEntry.Mismatch("Type", expected[i], null, formatter: Formatters.FromClassName), }));
+                    RecordThen("Missing expected results", details => details.Mismatch("Type", expected[i], null, formatter: Formatters.FromClassName));
                 }
             }
             if (actual.Count > expected.Count)
             {
                 for (int i = Math.Max(0, expected.Count - 1); i < actual.Count; i++)
                 {
-                    _thens.Add(new ReportEntry.Then("More results than expected", new ReportEntry.Detail[] { new ReportEntry.Mismatch("Type", null, actual[i], formatter: Formatters.FromClassName), }));
+                    RecordThen("More results than expected", details => details.Mismatch("Type", null, actual[i], formatter: Formatters.FromClassName));
                 }
             }
-
-            return Task.FromResult((IReadOnlyList<ReportEntry.Then>)_thens);
         }
 
-        internal override IReadOnlyList<ReportEntry.Given> ReportGivens()
-        {
-            return Definition.Given.Select(x => Report(x, (n, d) => new ReportEntry.Given(n, d))).ToArray();
-        }
-
-        private IReadOnlyList<ReportEntry.Detail> DetailFromProperties(object instance, Type type)
+        void DetailFromProperties(IAddDetail details, object instance, Type type)
         {
             var ignored = IgnoredByType(type);
-            return type.GetProperties().Where(p => !ignored.Contains(p.Name)).Select(p => new ReportEntry.Detail(p.Name, p.GetValue(instance))).ToArray();
+            if (type.IsPrimitive)
+                details.Add("Value", instance);
+            var properties = type.GetProperties().Where(p => !ignored.Contains(p.Name));
+            foreach (var property in properties)
+                details.Add(property.Name, property.GetValue(instance));//TODO: Add looking up formatters and format strings
         }
 
-        private T Report<T>(object instance, Func<string, IReadOnlyList<ReportEntry.Detail>, T> create)
+        private void Report(object instance, Action<string, Action<IAddDetail>> create)
         {
             var type = instance.GetType();
-            return create(type.Name, DetailFromProperties(instance, type));
-        }
-
-        internal override ReportEntry.When ReportWhen()
-        {
-            return Report(Definition.When, (n, d) => new ReportEntry.When(n, d));
-        }
-
-        internal override IReadOnlyList<ReportEntry.Then> ReportThens()
-        {
-            return _thens;
+            create(type.Name, details => DetailFromProperties(details, instance, type));
         }
     }
 
+    public abstract class ReflectionBasedScenarioRunner<TGiven, TWhen, TThen, TState> : ReflectionBasedScenarioRunner<TGiven, TWhen, TThen> where TState : class
+    {
+        protected async override Task Run()
+        {
+            await base.Run();
+            if(State == null)
+                State = await AcquireState();
+        }
+
+        protected abstract Task<TState> AcquireState();
+        public TState State { get; private set; }
+    }
+
     /// <summary>
-    /// Fluent interface for defining a <see cref="Scenario"/>
+    /// Fluent interface for defining a <see cref="ScenarioRunner"/>
     /// </summary>
     /// <typeparam name="TG">The type of the Givens</typeparam>
     /// <typeparam name="TW">The type of the When</typeparam>
@@ -271,36 +291,36 @@ namespace Xunit.ScenarioReporting
     public interface IDefine<in TG, in TW, in TT>
     {
         /// <summary>
-        /// Specify the givens for the scenario
+        /// Specify the givens for the scenarioRunner
         /// </summary>
         /// <param name="givens"></param>
         /// <returns>An interface to specify the when</returns>
         IGiven<TW, TT> Given(params TG[] givens);
     }
     /// <summary>
-    /// Fluent interface for defining a <see cref="Scenario"/>
+    /// Fluent interface for defining a <see cref="ScenarioRunner"/>
     /// </summary>
     /// <typeparam name="TW">The type of the When</typeparam>
     /// <typeparam name="TT">The type of the Thens</typeparam>
     public interface IGiven<in TW, in TT>
     {
         /// <summary>
-        /// Specify the when of the scenario
+        /// Specify the when of the scenarioRunner
         /// </summary>
-        /// <param name="when">The when of the scenario</param>
+        /// <param name="when">The when of the scenarioRunner</param>
         /// <returns>An interface for defining the Thens</returns>
         IWhen<TT> When(TW when);
     }
     /// <summary>
-    /// Fluent interface for defining a <see cref="Scenario"/>
+    /// Fluent interface for defining a <see cref="ScenarioRunner"/>
     /// </summary>
     /// <typeparam name="TT">The type of the Thens</typeparam>
     public interface IWhen<in TT>
     {
         /// <summary>
-        /// Specify the thens of the scenario
+        /// Specify the thens of the scenarioRunner
         /// </summary>
-        /// <param name="then">The thens of the scenario</param>
+        /// <param name="then">The thens of the scenarioRunner</param>
         void Then(params TT[] then);
     }
 }

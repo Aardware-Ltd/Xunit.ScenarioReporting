@@ -3,13 +3,13 @@ using Xunit;
 
 namespace Examples
 {
-    [CollectionDefinition("ExampleScenario")]
+    [CollectionDefinition("ExampleScenarioRunner")]
     public class ExampleScenarioCollection : ICollectionFixture<
-        ExampleScenarioCollection.InstanceCountingExampleScenario>
+        ExampleScenarioCollection.InstanceCountingExampleScenarioRunner>
     {
-        public class InstanceCountingExampleScenario : ExampleScenario
+        public class InstanceCountingExampleScenarioRunner : ExampleScenarioRunner
         {
-            public InstanceCountingExampleScenario()
+            public InstanceCountingExampleScenarioRunner()
             {
                 Interlocked.Increment(ref _instanceCount);
             }

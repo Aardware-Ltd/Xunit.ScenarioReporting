@@ -12,7 +12,7 @@ namespace Xunit.ScenarioReporting
     class ScenarioXunitTestClassRunner : XunitTestClassRunner
     {
         private readonly ScenarioReport _report;
-        private Scenario _scenario;
+        private ScenarioRunner _scenarioRunner;
 
         public ScenarioXunitTestClassRunner(
                                           ScenarioReport report,
@@ -41,19 +41,28 @@ namespace Xunit.ScenarioReporting
             await base.AfterTestClassStartingAsync();
             Aggregator.Run(() =>
             {
-                _scenario = ClassFixtureMappings.Values.OfType<Scenario>().SingleOrDefault();
-                if(_scenario != null)
-                    _scenario.Title = Class.Name;
+                _scenarioRunner = ClassFixtureMappings.Values.OfType<ScenarioRunner>().SingleOrDefault();
+                if(_scenarioRunner != null)
+                    _scenarioRunner.Title = Class.Name;
             });
         }
 
         protected override async Task BeforeTestClassFinishedAsync()
         {
-            await base.BeforeTestClassFinishedAsync();
-            if (_scenario != null)
+            if (_scenarioRunner != null)
             {
-                _report.Report(_scenario);
+                var result = await _scenarioRunner.Result();
+                _report.Report(result);
+                try
+                {
+                    result.ThrowIfErrored();
+                }
+                catch (Exception ex)
+                {
+                    Aggregator.Add(ex);
+                }
             }
+            await base.BeforeTestClassFinishedAsync();
         }
     }
 }

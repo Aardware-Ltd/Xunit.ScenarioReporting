@@ -32,7 +32,7 @@ namespace Xunit.ScenarioReporting
         internal const string ReportAssemblyOverviewMarkdownContent = "ReportAssemblyOverviewMarkdownContent.xslt";
         internal const string ReportAssemblyOverviewMarkdown = "ReportAssemblyOverview.md";
         internal const string ReportPath = "Reports";
-
+        
         /// <summary>
         /// The name of the assembly to use in the <see cref="TestFrameworkAttribute"/>
         /// </summary>
@@ -41,5 +41,12 @@ namespace Xunit.ScenarioReporting
         /// The name of the framework to use in the <see cref="TestFrameworkAttribute"/>
         /// </summary>
         public const string Framework = AssemblyName + "." + nameof(ScenarioReportingXunitTestFramework);
+
+        internal static class Errors
+        {
+            public static string DontReturnScenarioResults =
+                    "Returning Scenario run results where in a class that takes as ScenarioRunner as a constructor parameter in not allowed"
+                ;
+        }
     }
 }

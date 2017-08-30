@@ -11,20 +11,20 @@ namespace Xunit.ScenarioReporting
 {
     class ScenarioReportingTestInvoker : XunitTestInvoker
     {
-        private readonly Scenario _scenario;
+        private readonly ScenarioRunner _scenarioRunner;
         private readonly ScenarioReport _report;
-        private MethodInfo _openVerify;
+        private readonly MethodInfo _openVerify;
 
-        public ScenarioReportingTestInvoker(Scenario scenario, ScenarioReport report, ITest test,
+        public ScenarioReportingTestInvoker(ScenarioRunner scenarioRunner, ScenarioReport report, ITest test,
             IMessageBus messageBus, Type testClass,
             object[] constructorArguments, MethodInfo testMethod, object[] testMethodArguments,
             IReadOnlyList<BeforeAfterTestAttribute> beforeAfterAttributes, ExceptionAggregator aggregator,
             CancellationTokenSource cancellationTokenSource) : base(test, messageBus, testClass, constructorArguments,
             testMethod, testMethodArguments, beforeAfterAttributes, aggregator, cancellationTokenSource)
         {
-            _scenario = scenario;
+            _scenarioRunner = scenarioRunner;
             _report = report;
-            _openVerify = this.GetType().GetMethod(nameof(VerifyAndReport));
+            _openVerify = GetType().GetMethod(nameof(VerifyAndReport), BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         protected override object CallTestMethod(object testClassInstance)
@@ -38,55 +38,48 @@ namespace Xunit.ScenarioReporting
                 {
                     var resultType = result.GetType();
                     var returnType = resultType.GetGenericArguments()[0];
-                    if (returnType.IsSubclassOf(typeof(Scenario)))
+                    if (typeof(ScenarioRunResult).IsAssignableFrom(returnType))
                     {
-                        //TODO: collate for scenario report
-                        //Convert to scenario task
+                        //Convert to scenarioRunner task
                         var closedVerify = _openVerify.MakeGenericMethod(returnType);
-                        return closedVerify.Invoke(this, new[] {result, DisplayName, TestCase.Method.Name});
+                        return closedVerify.Invoke(this, new[] { result, TestCase.DisplayName });
                     }
                 }
-                else if (result is Scenario)
+                else if (result is ScenarioRunResult)
                 {
-                    var scenario = (Scenario) result;
-                    if (scenario.Title == null) scenario.Title = DisplayName;
-                    return VerifyAndReportScenario(scenario, TestCase.Method.Name);
+                    var scenario = (ScenarioRunResult)result;
+                    VerifyAndReportScenario(scenario, TestCase.DisplayName);
                 }
-                if (_scenario != null)
+                if (_scenarioRunner != null)
                 {
-                    _scenario.AddResult(TestCase.Method.Name);
+                    _scenarioRunner.AddResult(TestCase.DisplayName);
                 }
                 return result;
             }
             catch (Exception e)
             {
-
-                if (_scenario != null && !(e is ScenarioVerificationException))
+                if (_scenarioRunner != null && !(e is ScenarioVerificationException))
                 {
-                    _scenario.AddResult(TestCase.Method.Name, e.Unwrap());
+                    _scenarioRunner.AddResult(TestCase.DisplayName, e.Unwrap());
                 }
-                Aggregator.Add(e);
+                Aggregator.Add(e.Unwrap());
                 return result;
             }
         }
 
-        private async Task VerifyAndReportScenario(Scenario scenario, string name)
+        private void VerifyAndReportScenario(ScenarioRunResult result, string name)
         {
-            try
-            {
-                await scenario.SafeVerify(name);
-            }
-            finally
-            {
-                _report.Report(scenario);
-            }
-
+            if(_scenarioRunner!= null)
+                throw new InvalidOperationException(Constants.Errors.DontReturnScenarioResults);
+            result.Title = result.Title ?? name;
+            _report.Report(result);
+            result.ThrowIfErrored();
         }
 
-        private async Task VerifyAndReport<T>(Task<T> scenarioTask, string name) where T : Scenario
+        private async Task VerifyAndReport<T>(Task<T> scenarioTask, string name) where T : ScenarioRunResult
         {
-            Scenario scenario = await scenarioTask;
-            await VerifyAndReportScenario(scenario, name);
+            ScenarioRunResult result = await scenarioTask;
+            VerifyAndReportScenario(result, name);
         }
     }
 }

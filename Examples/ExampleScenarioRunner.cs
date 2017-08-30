@@ -5,12 +5,11 @@ using Xunit.ScenarioReporting;
 
 namespace Examples
 {
-    public class ExampleScenario : ReflectionBasedScenario<object, object, object>
+    public class ExampleScenarioRunner : ReflectionBasedScenarioRunner<object, object, object>
     {
-        public ExampleScenario()
+        public ExampleScenarioRunner()
         {
             _aggregate = new CalculatorAggregate();
-            this.Define(def => def.Given(new Number(3), new Number(5)).When(new Operation(OperationType.Add)).Then(new ComputedResult(8)));
         }
 
         private readonly CalculatorAggregate _aggregate;
@@ -35,9 +34,5 @@ namespace Examples
         {
             return Task.FromResult((IReadOnlyList<object>)new []{_actual});
         }
-        
-        public bool OtherInvariant => true;
-
-
     }
 }

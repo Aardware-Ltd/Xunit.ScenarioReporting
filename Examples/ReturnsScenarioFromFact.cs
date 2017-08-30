@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Examples.ExampleDomain;
 using Xunit;
 using Xunit.ScenarioReporting;
 
@@ -12,20 +13,30 @@ namespace Examples
     public class ReturnsScenarioFromFact
     {
         [Fact]
-        public Scenario BusExample()
+        public Task<ScenarioRunResult> BasicExample()
         {
-           return new ExampleScenario();
+           return new ExampleScenarioRunner().Run(def => def.Given(new Number(3), new Number(5)).When(new Operation(OperationType.Add)).Then(new ComputedResult(8))); ;
         }
 
         [Fact]
-        public Scenario AsyncBusExample()
+        public Task<ScenarioRunResult> AsyncBusExample()
         {
             var bus = new Bus();
             bus.Subscribe(new SimpleResponder(bus));
-            return new MessageBusScenario(bus).Define(def => def
+            return new MessageBusScenarioRunner(bus).Run(def => def
                 .Given()
                 .When(new ReverseString("Hello, world!"))
                 .Then(new ReversedString("!dlrow ,olleH")));
+        }
+
+        [Theory]
+        [InlineData(1, 2, 3)]
+        [InlineData(4, 5, 9)]
+        [InlineData(21, 21, 42)]
+        public Task<ScenarioRunResult> TheoryExample(int a, int b, int result)
+        {
+            return new ExampleScenarioRunner().Run(def =>
+                def.Given(new Number(a), new Number(b)).When(new Operation(OperationType.Add)).Then(new ComputedResult(result)));
         }
 
         class SimpleResponder : IHandle<ReverseString> {
@@ -266,13 +277,13 @@ namespace Examples
                 _cancel.Cancel();
             }
         }
-        class MessageBusScenario : ReflectionBasedScenario<Message, Message, Message>, IHandle<Message> {
+        class MessageBusScenarioRunner : ReflectionBasedScenarioRunner<Message, Message, Message>, IHandle<Message> {
             private readonly Bus _bus;
             private readonly TaskCompletionSource<bool> _allMessagesReceived;
             private readonly List<Message> _actuals;
             private bool _collecting;
 
-            public MessageBusScenario(Bus bus)
+            public MessageBusScenarioRunner(Bus bus)
             {
                 _bus = bus;
                 _actuals = new List<Message>();

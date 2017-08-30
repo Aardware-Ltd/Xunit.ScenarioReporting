@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Xsl;
 using System.Reflection;
+using Xunit.ScenarioReporting.Results;
 using static Xunit.ScenarioReporting.Constants;
 using System.Text.RegularExpressions;
 namespace Xunit.ScenarioReporting
@@ -131,6 +132,8 @@ namespace Xunit.ScenarioReporting
         string MarkdownReportFile { get; }
         string AssemblyName { get; }
     }
+    
+    //TODO: this class would be better off using pattern matching 
     class ReportWriter : IReportWriter
     {
         private readonly XmlWriter _output;
@@ -144,10 +147,10 @@ namespace Xunit.ScenarioReporting
                 [typeof(EndReport)] = this.EndReport,
                 [typeof(StartScenario)] = this.StartScenario,
                 [typeof(EndScenario)] = this.EndScenario,
-                [typeof(Scenario.ReportEntry.Given)] = this.Given,
-                [typeof(Scenario.ReportEntry.When)] = this.When,
-                [typeof(Scenario.ReportEntry.Then)] = this.Then,
-                [typeof(Scenario.ReportEntry.Assertion)] = this.Then,
+                [typeof(Given)] = this.Given,
+                [typeof(When)] = this.When,
+                [typeof(Then)] = this.Then,
+                [typeof(Assertion)] = this.Then,
             };
 
             _output = output;
@@ -181,7 +184,7 @@ namespace Xunit.ScenarioReporting
 
         private async Task Given(XmlWriter writer, ReportItem item)
         {
-            var given = (Scenario.ReportEntry.Given)item;
+            var given = (Given)item;
             //await writer.WriteLineAsync($"{H4} {given.Title}");
             await writer.WriteStartElementAsync(null, XmlTagGiven, null);
             await WriteDetails(writer, given.Title, given.Details);
@@ -190,7 +193,7 @@ namespace Xunit.ScenarioReporting
 
         private async Task Then(XmlWriter writer, ReportItem item)
         {
-            var then = (Scenario.ReportEntry.Then)item;
+            var then = (Then)item;
             //await writer.WriteLineAsync($"{H4} {then.Title}");
             await writer.WriteStartElementAsync(null, XmlTagThen, null);
             await WriteDetails(writer, then.Title, then.Details);
@@ -199,7 +202,7 @@ namespace Xunit.ScenarioReporting
 
         private async Task When(XmlWriter writer, ReportItem item)
         {
-            var when = (Scenario.ReportEntry.When)item;
+            var when = (When)item;
             //await writer.WriteLineAsync($"{H4} When ");
             //await writer.WriteLineAsync($"{H4} {when.Title}");
             await writer.WriteStartElementAsync(null, XmlTagWhen, null);
@@ -207,27 +210,26 @@ namespace Xunit.ScenarioReporting
             await writer.WriteEndElementAsync();
         }
 
-        private static async Task WriteDetails(XmlWriter writer, string title, IReadOnlyList<Scenario.ReportEntry.Detail> details)
+        private static async Task WriteDetails(XmlWriter writer, string title, IReadOnlyList<Detail> details)
         {
             await writer.WriteElementStringAsync(null, XmlTagTitle, null, title);
 
             foreach (var detail in details)
             {
                 await writer.WriteStartElementAsync(null, XmlTagDetail, null);
-
                 
-                if (detail is Scenario.ReportEntry.Failure || detail is Scenario.ReportEntry.Mismatch)
+                if (detail is Failure || detail is Mismatch)
                 {
                     //await writer.WriteElementStringAsync(null, XMLTagMessage, null, "FAILED " + " " + detail.Name);
                     ////await writer.WriteElementStringAsync(null, XmlTagFailure, null, detail.Name);
 
-                    if (detail is Scenario.ReportEntry.Failure)
+                    if (detail is Failure)
                     {
                         //TODO: Condition not tested
                         await writer.WriteStartElementAsync(null, XmlTagFailure, null);
 
                         await writer.WriteStartElementAsync(null, XmlTagException, null);
-                        var failure = detail as Scenario.ReportEntry.Failure;
+                        var failure = detail as Failure;
                         await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
                         await writer.WriteElementStringAsync(null, XmlTagValue, null, failure.Value.ToString()); // Value should contain stack trace for Exceptions
                         await writer.WriteEndElementAsync(); // /Exception
@@ -236,7 +238,7 @@ namespace Xunit.ScenarioReporting
 
                     }
 
-                    if (detail is Scenario.ReportEntry.Mismatch)
+                    if (detail is Mismatch)
                     {
                         //TODO: Nothing may ever need to be written here. Confirm and remove.
                         
@@ -250,14 +252,12 @@ namespace Xunit.ScenarioReporting
 
                 if (detail.Formatter != null)
                 {
-                    //await writer.WriteLineAsync($"{Bold}{detail.Name} {Italic}{detail.Formatter(detail.Value)}{Italic}{Bold}");
-                    ////await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + detail.Formatter(detail.Value));
                     await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
                     await writer.WriteElementStringAsync(null, XmlTagValue, null, detail.Formatter(detail.Value));
-                    var mismatch = detail as Scenario.ReportEntry.Mismatch;
+
+                    var mismatch = detail as Mismatch;
                     if (mismatch != null)
                     {
-                        ////await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + mismatch.Formatter(mismatch.Actual));
                         await WriteFailureMismatch(writer, mismatch.Name, mismatch.Value.ToString(), mismatch.Formatter(mismatch.Actual));
 
                     }
@@ -265,28 +265,19 @@ namespace Xunit.ScenarioReporting
                 }
                 else if (detail.Format != null)
                 {
-                    // var formatString = $"{Bold}{detail.Name} {Italic}{{0:{detail.Format}}}{Italic}{Bold}";
-                    //await writer.WriteLineAsync(string.Format(formatString, detail.Value));
-                    //TODO: This test case not tested
-                    //TODO: {0:{detail.Format}?
-                    ////await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + string.Format(detail.Format, detail.Value));
                     await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
                     await writer.WriteElementStringAsync(null, XmlTagValue, null, string.Format(detail.Format, detail.Value));
-                    var mismatch = detail as Scenario.ReportEntry.Mismatch;
+                    var mismatch = detail as Mismatch;
                     if (mismatch != null)
                     {
-                        ////await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + string.Format(detail.Format, mismatch.Actual));
                         await WriteFailureMismatch(writer, mismatch.Name, mismatch.Value.ToString(), string.Format(detail.Format, mismatch.Actual));
-
                     }
                 }
                 else
                 {
-                    //await writer.WriteLineAsync($"{Bold}{detail.Name} {Italic}{detail.Value}{Italic}{Bold}");
-                    ////await writer.WriteElementStringAsync(null, XmlTagMessage, null, detail.Name + " " + detail.Value);
                     await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
                     await writer.WriteElementStringAsync(null, XmlTagValue, null, detail.Value.ToString());
-                    var mismatch = detail as Scenario.ReportEntry.Mismatch;
+                    var mismatch = detail as Mismatch;
                     if (mismatch != null)
                     {
                         ////await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + mismatch.Actual);

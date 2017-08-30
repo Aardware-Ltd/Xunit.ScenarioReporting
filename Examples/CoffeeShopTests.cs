@@ -9,20 +9,20 @@ namespace Examples
     public class CoffeeShopTests
     {
         [Fact]
-        public Scenario WhenOrderingFlatWhite()
+        public Task<ScenarioRunResult> WhenOrderingFlatWhite()
         {
-            return new CoffeeShopScenario().Define(def => def
+            return new CoffeeShopScenarioRunner().Run(def => def
                 .Given(new CoffeeReceived(Guid.NewGuid(), 10), new MilkReceived(Guid.NewGuid(), 10))
                 .When(new MakeFlatWhite(Guid.NewGuid()))
                 .Then(new CoffeeUsed(Guid.NewGuid(), 2), new MilkUsed(Guid.NewGuid(), 2)));
         }
 
-        class CoffeeShopScenario : ReflectionBasedScenario<Event, Command, Event>
+        class CoffeeShopScenarioRunner : ReflectionBasedScenarioRunner<Event, Command, Event>
         {
             private readonly CoffeeShop _shop;
             private readonly Dictionary<Type, Action<Command>> _cmdDispatcher;
 
-            public CoffeeShopScenario()
+            public CoffeeShopScenarioRunner()
             {
                 _shop = new CoffeeShop();
                 _cmdDispatcher = new Dictionary<Type, Action<Command>>()

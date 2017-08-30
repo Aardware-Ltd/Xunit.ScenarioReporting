@@ -13,7 +13,7 @@ namespace Xunit.ScenarioReporting
     {
         private readonly ScenarioReport _report;
         readonly IMessageSink _diagnosticMessageSink;
-        private Scenario _scenario;
+        private ScenarioRunner _scenarioRunner;
 
         public ScenarioReportingXunitTestCollectionRunner(ScenarioReport report,
                                                             ITestCollection testCollection,
@@ -57,8 +57,8 @@ namespace Xunit.ScenarioReporting
         //                ));
         //            else
         //            {
-        //                CollectionFixtureMappings[fixtureType] = _scenario = (Definition)ctor.Invoke(ctorArgs);
-        //                _scenario.Title = TestCollection.CollectionDefinition.Name;
+        //                CollectionFixtureMappings[fixtureType] = _scenarioRunner = (Definition)ctor.Invoke(ctorArgs);
+        //                _scenarioRunner.Title = TestCollection.CollectionDefinition.Name;
         //            }
         //        });
         //    }
@@ -76,9 +76,9 @@ namespace Xunit.ScenarioReporting
             await base.AfterTestCollectionStartingAsync();
             Aggregator.Run(() =>
             {
-                _scenario = CollectionFixtureMappings.Values.OfType<Scenario>().SingleOrDefault();
-                if (_scenario != null)
-                    _scenario.Title = TestCollection.CollectionDefinition.Name;
+                _scenarioRunner = CollectionFixtureMappings.Values.OfType<ScenarioRunner>().SingleOrDefault();
+                if (_scenarioRunner != null)
+                    _scenarioRunner.Title = TestCollection.CollectionDefinition.Name;
             });
         }
 
@@ -89,11 +89,22 @@ namespace Xunit.ScenarioReporting
 
         protected override async Task BeforeTestCollectionFinishedAsync()
         {
-            await base.BeforeTestCollectionFinishedAsync();
-            if (_scenario != null)
+            
+            if (_scenarioRunner != null)
             {
-                _report.Report(_scenario);
+                var result = await _scenarioRunner.Result();
+                _report.Report(result);
+                try
+                {
+                    result.ThrowIfErrored();
+                }
+                catch (Exception ex)
+                {
+                    Aggregator.Add(ex);
+                }
             }
+
+            await base.BeforeTestCollectionFinishedAsync();
         }
     }
 }

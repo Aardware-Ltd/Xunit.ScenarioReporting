@@ -2,23 +2,27 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Xunit.ScenarioReporting.Results;
 
 namespace Xunit.ScenarioReporting
 {
-    class ScenarioVerificationException : Exception
+    /// <summary>
+    /// Thrown if the scenario result has any failures
+    /// </summary>
+    public class ScenarioVerificationException : Exception
     {
-        internal ScenarioVerificationException(Scenario.ReportEntry.Then[] failures): base(FormatFailures(failures))
+        internal ScenarioVerificationException(Then[] failures): base(FormatFailures(failures))
         {
             
         }
 
-        static string FormatFailures(IReadOnlyList<Scenario.ReportEntry.Then> failures)
+        static string FormatFailures(IReadOnlyList<Then> failures)
         {
             var sb = new StringBuilder();
             foreach (var failure in failures)
             {
                 sb.AppendLine(failure.Title);
-                foreach (var detail in failure.Details.OfType<Scenario.ReportEntry.Mismatch>())
+                foreach (var detail in failure.Details.OfType<Mismatch>())
                 {
                     sb.AppendLine($"  Expected : {detail.Value}");
                     sb.AppendLine($"  Actual   : {detail.Actual}");

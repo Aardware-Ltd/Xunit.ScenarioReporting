@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit.ScenarioReporting.Results;
 using Xunit.Sdk;
 
 namespace Xunit.ScenarioReporting
@@ -64,16 +65,17 @@ namespace Xunit.ScenarioReporting
         private int _isWriting;
         private TaskCompletionSource<bool> _final;
 
-        public void Report(Scenario scenario)
+        public void Report(ScenarioRunResult result)
         {
             try
             {
                 var writer = new DelayedBatchWriter(_queue);
-                writer.Write(new StartScenario(scenario.Title));
-                foreach (var given in scenario.GetGivens())
+                writer.Write(new StartScenario(result.Title));
+                foreach (var given in result.Given)
                     writer.Write(given);
-                writer.Write(scenario.GetWhen());
-                foreach (var then in scenario.GetThens())
+                if(result.When != null)
+                    writer.Write(result.When);
+                foreach (var then in result.Then)
                     writer.Write(then);
                 writer.Complete();
             }
@@ -112,19 +114,19 @@ namespace Xunit.ScenarioReporting
                 _batch.Enqueue(start);
             }
 
-            public void Write(Scenario.ReportEntry.Given given)
+            public void Write(Given given)
             {
                 if(given != null)
                     _batch.Enqueue(given);
             }
 
-            public void Write(Scenario.ReportEntry.When when)
+            public void Write(When when)
             {
                 if (when != null)
                     _batch.Enqueue(when);
             }
 
-            public void Write(Scenario.ReportEntry.Then then)
+            public void Write(Then then)
             {
                 if(then != null)
                     _batch.Enqueue(then);
