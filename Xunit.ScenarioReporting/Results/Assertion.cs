@@ -1,15 +1,14 @@
 using System;
-using System.Collections.Generic;
 
 namespace Xunit.ScenarioReporting.Results
 {
     internal class Assertion : Then
     {
-        public Assertion(string title) : base(title, (IReadOnlyList<Detail>) new Detail[] { })
+        public Assertion(string scope, string title) : base(scope, title, new Detail[] { })
         {
         }
 
-        public Assertion(string title, Exception ex) : base(title, (IReadOnlyList<Detail>) new[] { ExceptionToDetail(ex) }) { }
+        public Assertion(string scope, string title, Exception ex) : base(scope, title, new[] { ExceptionToDetail(ex) }) { }
 
         static Detail ExceptionToDetail(Exception ex)
         {

@@ -22,8 +22,10 @@ namespace Xunit.ScenarioReporting
             object[] testMethodArguments = null)
             : base(diagnosticMessageSink, defaultMethodDisplay, testMethod, testMethodArguments)
         {
-
+            TestMethodName = BaseDisplayName;
         }
+
+        public string TestMethodName { get; }
 
         public override Task<RunSummary> RunAsync(IMessageSink diagnosticMessageSink, IMessageBus messageBus,
             object[] constructorArguments,

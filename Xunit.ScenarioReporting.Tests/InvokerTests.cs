@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
+using Xunit.ScenarioReporting.Results;
 using Xunit.Sdk;
 
 namespace Xunit.ScenarioReporting.Tests
@@ -19,6 +20,8 @@ namespace Xunit.ScenarioReporting.Tests
             await Mock.ExecuteTestMethodAsync<FunctionsThatReturnScenarioRunResults>(report, nameof(BasicFactScenario));
             var scenario = Assert.Single(output.Items.OfType<StartScenario>());
             Assert.Contains(nameof(BasicFactScenario), scenario.Name);
+
+            Assert.All(output.Items.OfType<Then>(), then => Assert.Contains(nameof(BasicFactScenario), then.Scope));
         }
 
         [Fact]
@@ -43,6 +46,17 @@ namespace Xunit.ScenarioReporting.Tests
             Assert.Contains(Constants.Errors.DontReturnScenarioResults, result.Message);
         }
 
+        [Fact]
+        public async Task WhenScenarioHasTitleTheScopeShouldNotOverrideIt()
+        {
+            var output = new VerifiableReportWriter();
+            var report = new ScenarioReport("Test", output);
+            await Mock.ExecuteTestMethodAsync<FunctionsThatReturnScenarioRunResults>(report, nameof(FactScenarioWithTitle));
+            var scenario = Assert.Single(output.Items.OfType<StartScenario>());
+            Assert.Contains(nameof(FactScenarioWithTitle), scenario.Scope);
+            Assert.Equal("Custom Title", scenario.Name);
+
+        }
         public Task<ScenarioRunResult> BasicFactScenario()
         {
             return new TestScenarioRunner()
@@ -54,6 +68,12 @@ namespace Xunit.ScenarioReporting.Tests
         {
             return new TestScenarioRunner()
                 .Run(def => def.Given(new TestGiven()).When(new TestWhen()).Then(new TestThen()));
+        }
+
+        public Task<ScenarioRunResult> FactScenarioWithTitle()
+        {
+            return new TestScenarioRunner()
+                .Run(def => def.Given(new TestGiven()).When(new TestWhen()).Then(new TestThen()), "Custom Title");
         }
 
         class TestScenarioRunner : ReflectionBasedScenarioRunner<object, object, object>

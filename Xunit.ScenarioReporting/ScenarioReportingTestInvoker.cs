@@ -30,6 +30,7 @@ namespace Xunit.ScenarioReporting
         protected override object CallTestMethod(object testClassInstance)
         {
             object result = null;
+            var testMethodName = ((ScenarioReportingXunitTestCase)TestCase).TestMethodName;
             try
             {
                 result = base.CallTestMethod(testClassInstance);
@@ -52,7 +53,7 @@ namespace Xunit.ScenarioReporting
                 }
                 if (_scenarioRunner != null)
                 {
-                    _scenarioRunner.AddResult(TestCase.DisplayName);
+                    _scenarioRunner.AddResult(testMethodName, TestCase.DisplayName);
                 }
                 return result;
             }
@@ -60,7 +61,7 @@ namespace Xunit.ScenarioReporting
             {
                 if (_scenarioRunner != null && !(e is ScenarioVerificationException))
                 {
-                    _scenarioRunner.AddResult(TestCase.DisplayName, e.Unwrap());
+                    _scenarioRunner.AddResult(testMethodName, TestCase.DisplayName, e.Unwrap());
                 }
                 Aggregator.Add(e.Unwrap());
                 return result;
@@ -71,7 +72,7 @@ namespace Xunit.ScenarioReporting
         {
             if(_scenarioRunner!= null)
                 throw new InvalidOperationException(Constants.Errors.DontReturnScenarioResults);
-            result.Title = result.Title ?? name;
+            result.Scope = name;
             _report.Report(result);
             result.ThrowIfErrored();
         }
