@@ -45,8 +45,9 @@ namespace Xunit.ScenarioReporting
         internal static class Errors
         {
             public static string DontReturnScenarioResults =
-                    "Returning Scenario run results where in a class that takes as ScenarioRunner as a constructor parameter in not allowed"
-                ;
+                    "Returning Scenario run results where in a class that takes as ScenarioRunner as a constructor parameter in not allowed";
+
+            public static string ScenarioNotDefined = "Scenario is not defined";    
         }
     }
 }

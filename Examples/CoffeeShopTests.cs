@@ -9,12 +9,39 @@ namespace Examples
     public class CoffeeShopTests
     {
         [Fact]
+        public Task<ScenarioRunResult> WhenOrderingFlatWhiteWithWrongExpectedOrder()
+        {
+            return new CoffeeShopScenarioRunner().Run(def => def
+                .Given(new CoffeeReceived(Guid.NewGuid(), 10), new MilkReceived(Guid.NewGuid(), 10))
+                .When(new MakeFlatWhite(Guid.NewGuid()))
+                .Then(new CoffeeUsed(Guid.NewGuid(), 2), new MilkUsed(Guid.NewGuid(), 4)));
+        }
+
+        [Fact]
         public Task<ScenarioRunResult> WhenOrderingFlatWhite()
         {
             return new CoffeeShopScenarioRunner().Run(def => def
                 .Given(new CoffeeReceived(Guid.NewGuid(), 10), new MilkReceived(Guid.NewGuid(), 10))
                 .When(new MakeFlatWhite(Guid.NewGuid()))
-                .Then(new CoffeeUsed(Guid.NewGuid(), 2), new MilkUsed(Guid.NewGuid(), 2)));
+                .Then(new MilkUsed(Guid.NewGuid(), 4), new CoffeeUsed(Guid.NewGuid(), 2)));
+        }
+
+        [Theory]
+        [InlineData(10, 0, "Not enough milk")]
+        [InlineData(10, 3, "Not enough milk")]
+        [InlineData(0, 10, "Not enough coffee")]
+        [InlineData(1, 10, "Not enough coffee")]
+        public Task<ScenarioRunResult> WhenOrderingFlatWhiteWithInsufficinentResources(int coffee, int milk, string message)
+        {
+            List<Event> givens = new List<Event>();
+            if(coffee > 0)
+                givens.Add(new CoffeeReceived(Guid.NewGuid(),coffee));
+            if(milk > 0)
+                givens.Add(new MilkReceived(Guid.NewGuid(),milk));
+            return new CoffeeShopScenarioRunner().Run(def => def
+                .Given(givens.ToArray())
+                .When(new MakeFlatWhite(Guid.NewGuid()))
+                .Throws(new Exception(message)), $"Ordering flat white with {(milk > 0 ? milk.ToString() : "no") } milk and {(coffee > 0 ? coffee.ToString() :"no")} coffee");
         }
 
         class CoffeeShopScenarioRunner : ReflectionBasedScenarioRunner<Event, Command, Event>
@@ -48,8 +75,7 @@ namespace Examples
 
             protected override Task When(Command when)
             {
-                Action<Command> handler;
-                if (!_cmdDispatcher.TryGetValue(when.GetType(), out handler))
+                if (!_cmdDispatcher.TryGetValue(when.GetType(), out var handler))
                     throw new InvalidOperationException($"No handler for {when.GetType()}");
                 handler(when);
                 return Task.CompletedTask;
