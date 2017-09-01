@@ -29,48 +29,6 @@ namespace Xunit.ScenarioReporting
             _diagnosticMessageSink = diagnosticMessageSink;
         }
 
-        //protected override void CreateCollectionFixture(Type fixtureType)
-        //{
-        //    if (CollectionFixtureMappings.ContainsKey(fixtureType)) return;
-        //    if (fixtureType.IsSubclassOf(typeof(Definition)))
-        //    {
-        //        Aggregator.Run(() =>
-        //        {
-        //            var ctors = fixtureType.GetConstructors();
-        //            if (ctors.Length > 1) throw new InvalidOperationException($"Definition type {fixtureType.FullName} can only have 1 public constructor");
-        //            if (ctors.Length == 0) throw new InvalidOperationException($"Definition type {fixtureType.FullName} must have a public constructor");
-
-        //            var ctor = ctors[0];
-
-        //            var missingParameters = new List<ParameterInfo>();
-        //            var ctorArgs = ctor.GetParameters().Select(p =>
-        //            {
-        //                object arg;
-        //                if (!CollectionFixtureMappings.TryGetValue(p.ParameterType, out arg))
-        //                    missingParameters.Add(p);
-        //                return arg;
-        //            }).ToArray();
-
-        //            if (missingParameters.Count > 0)
-        //                Aggregator.Add(new TestClassException(
-        //                    $"Definition type '{fixtureType.FullName}' had one or more unresolved constructor arguments: {string.Join(", ", missingParameters.Select(p => $"{p.ParameterType.Name} {p.Name}"))}"
-        //                ));
-        //            else
-        //            {
-        //                CollectionFixtureMappings[fixtureType] = _scenarioRunner = (Definition)ctor.Invoke(ctorArgs);
-        //                _scenarioRunner.Title = TestCollection.CollectionDefinition.Name;
-        //            }
-        //        });
-        //    }
-        //    else
-        //    {
-        //        object value;
-        //        if (!CollectionFixtureMappings.TryGetValue(fixtureType, out value))
-        //        {
-        //            Aggregator.Run(() => CollectionFixtureMappings[fixtureType] = Activator.CreateInstance(fixtureType));
-        //        }
-        //    }
-        //}
         protected override async Task AfterTestCollectionStartingAsync()
         {
             await base.AfterTestCollectionStartingAsync();
@@ -78,7 +36,7 @@ namespace Xunit.ScenarioReporting
             {
                 _scenarioRunner = CollectionFixtureMappings.Values.OfType<ScenarioRunner>().SingleOrDefault();
                 if (_scenarioRunner != null)
-                    _scenarioRunner.Title = TestCollection.CollectionDefinition.Name;
+                    _scenarioRunner.Scope = TestCollection.CollectionDefinition.Name;
             });
         }
 

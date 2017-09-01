@@ -28,9 +28,9 @@ namespace Xunit.ScenarioReporting
             _thens = new List<Then>();
         }
 
-        internal void AddResult(string name, Exception e = null)
+        internal void AddResult(string scope, string name, Exception e = null)
         {
-            _thens.Add(e != null ? new Assertion(name, e) : new Assertion(name));
+            _thens.Add(e != null ? new Assertion(scope, name, e) : new Assertion(scope, name));
         }
         
         /// <summary>
@@ -111,7 +111,7 @@ namespace Xunit.ScenarioReporting
         protected void RecordThen(string title, Action<IAddThenDetail> detailBuilder)
         {
             var details = BuildDetails(detailBuilder);
-            _thens.Add(new Then(title, details));
+            _thens.Add(new Then(null, title, details));
         }
 
         private static List<Detail> BuildDetails(Action<IAddDetail> detailBuilder)
@@ -173,9 +173,9 @@ namespace Xunit.ScenarioReporting
                     _error = ExceptionDispatchInfo.Capture(ex);
                 }
                 if (_when == null)
-                    AddResult("Incomplete scenario", new Exception("No when provided"));
+                    AddResult(null, "Incomplete scenario", new Exception("No when provided"));
             }
-            return new ScenarioRunResult(Title, _givens, _when ?? NullWhen, _thens, _error);
+            return new ScenarioRunResult(Title, _givens, _when ?? NullWhen, _thens, _error){Scope = Scope};
         }
         static readonly When NullWhen = new When("No when provided", new Detail[]{});
         private ExceptionDispatchInfo _error;
@@ -192,5 +192,6 @@ namespace Xunit.ScenarioReporting
         /// the name of the class fixture. if returned from a test, then the name of the test will be used.
         /// </summary>
         public string Title { get; set; }
+        public string Scope { get; internal set; }
     }
 }

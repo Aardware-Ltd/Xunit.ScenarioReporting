@@ -43,7 +43,7 @@ namespace Xunit.ScenarioReporting
             {
                 _scenarioRunner = ClassFixtureMappings.Values.OfType<ScenarioRunner>().SingleOrDefault();
                 if(_scenarioRunner != null)
-                    _scenarioRunner.Title = Class.Name;
+                    _scenarioRunner.Scope = Class.Name;
             });
         }
 

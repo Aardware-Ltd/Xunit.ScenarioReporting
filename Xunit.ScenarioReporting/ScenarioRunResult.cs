@@ -12,6 +12,7 @@ namespace Xunit.ScenarioReporting
     public class ScenarioRunResult
     {
         internal readonly ExceptionDispatchInfo ErrorInfo;
+        private string _scope;
 
         internal ScenarioRunResult(string title, IReadOnlyList<Given> given, When when, IReadOnlyList<Then> then, ExceptionDispatchInfo errorInfo)
         {
@@ -22,11 +23,36 @@ namespace Xunit.ScenarioReporting
             Then = then;
         }
 
+        public string Scope
+        {
+            get => _scope;
+            set
+            {
+                _scope = value;
+                Title = Title ?? _scope;
+                if (Then.Any(x => x.Scope == null))
+                {
+                    var temp = new List<Then>();
+                    foreach (var t in Then)
+                    {
+                        var then = t;
+                        if (then.Scope == null)
+                        {
+                            then = new Then(_scope, then.Title, then.Details);
+                        }
+                        temp.Add(then);
+                    }
+                    Then = temp;
+                }
+                
+            }
+        }
+
         internal string Title { get; set; }
         internal IReadOnlyList<Given> Given { get; }
         internal When When { get; }
 
-        internal IReadOnlyList<Then> Then { get; }
+        internal IReadOnlyList<Then> Then { get; private set; }
 
         internal void ThrowIfErrored()
         {
@@ -40,7 +66,7 @@ namespace Xunit.ScenarioReporting
         {
             return Then
                 .Where(x => x.Details.OfType<Mismatch>().Any())
-                .Select(x => new Then(x.Title, x.Details.OfType<Mismatch>().ToArray()));
+                .Select(x => new Then(null, x.Title, x.Details.OfType<Mismatch>().ToArray()));
         }
 
         private IEnumerable<Assertion> Failures()
