@@ -25,7 +25,11 @@ namespace Xunit.ScenarioReporting
         /// method which provids a fluent builder for defining the current scenarioRunner.
         /// </summary>
         protected internal ScenarioDefinition Definition { protected get; set; }
-
+        
+        /// <summary>
+        /// Provides access to the exception that was thrown for additional verification.
+        /// </summary>
+        public Exception Thrown { get; private set; }
         private bool _run;
         private IReadOnlyList<TThen> _actuals;
 
@@ -40,6 +44,20 @@ namespace Xunit.ScenarioReporting
                 When = when;
                 Then = then;
             }
+
+            private ScenarioDefinition(IReadOnlyList<TGiven> given, TWhen when, Exception expectedException, bool verifyMessage)
+            {
+                Given = given;
+                When = when;
+                Then = new TThen[]{};
+                ExpectedException = expectedException;
+                VerifyExceptionMessage = verifyMessage;
+            }
+
+            public bool VerifyExceptionMessage { get; set; }
+
+            public Exception ExpectedException { get; }
+
             /// <summary>
             /// The givens for the current scenarioRunner.
             /// </summary>
@@ -55,9 +73,9 @@ namespace Xunit.ScenarioReporting
             /// </summary>
             public IReadOnlyList<TThen> Then { get; }
 
-            internal static DefinitionBuilder Builder = new DefinitionBuilder();
+            internal static ScenarioDefinitionBuilder Builder => new ScenarioDefinitionBuilder();
 
-            internal class DefinitionBuilder : IDefine<TGiven, TWhen, TThen>, IGiven<TWhen, TThen>, IWhen<TThen>
+            internal class ScenarioDefinitionBuilder : IDefine<TGiven, TWhen, TThen>, IGiven<TWhen, TThen>, IWhen<TThen>
             {
                 private ScenarioDefinition _scenarioDefinition;
                 private IReadOnlyList<TGiven> _givens;
@@ -80,6 +98,11 @@ namespace Xunit.ScenarioReporting
                     _scenarioDefinition = new ScenarioDefinition(_givens, _when, then);
                 }
 
+                void IWhen<TThen>.Throws<T>(T exception, bool verifyMessage)
+                {
+                    _scenarioDefinition = new ScenarioDefinition(_givens, _when, exception, true);
+                }
+
                 internal ScenarioDefinition Build()
                 {
                     return _scenarioDefinition;
@@ -92,15 +115,43 @@ namespace Xunit.ScenarioReporting
         protected override async Task Run()
         {
             if (Definition == null)
-                throw new InvalidOperationException("Definition is undefined");
+                throw new InvalidOperationException(Constants.Errors.ScenarioNotDefined);
 
             if (_run) return;
             _run = true;
             RecordSetup();
             await Given(Definition.Given);
-            await When(Definition.When);
+            try
+            {
+                await When(Definition.When);
+            }
+            catch (Exception ex) when (Definition.VerifyExceptionMessage)
+            {
+                Thrown = ex;
+            }
             _actuals = await ActualResults();
+            Verify(Definition.ExpectedException, Thrown, Definition.VerifyExceptionMessage);
             Verify(Definition.Then, _actuals);
+        }
+
+        private void Verify(Exception expected, Exception actual, bool verifyExceptionMessage)
+        {
+            if (expected == null) return;
+            RecordThen("Exception", detail =>
+            {
+                if (actual == null)
+                {
+                    detail.Mismatch(expected.GetType().FullName, expected, actual);
+                    return;
+                }
+                if (actual.GetType() != expected.GetType())
+                    detail.Mismatch("Type", expected.GetType(), actual.GetType(), formatter: Formatters.FromClassName);
+                if(verifyExceptionMessage)
+                    if (expected.Message == actual.Message)
+                        detail.Match("Message", expected.Message);
+                    else
+                        detail.Mismatch("Message", expected.Message, actual.Message);
+            });
         }
 
         private void RecordSetup()
@@ -218,8 +269,7 @@ namespace Xunit.ScenarioReporting
                         if (ignored.Contains(p.Name)) continue;
                         var ev = p.GetValue(e);
                         var av = p.GetValue(a);
-                        IEqualityComparer comparer;
-                        if (!Comparers.TryGetValue(p.PropertyType, out comparer))
+                        if (!Comparers.TryGetValue(p.PropertyType, out var comparer))
                         {
                             comparer = (IEqualityComparer)typeof(EqualityComparer<>).MakeGenericType(p.PropertyType)
                                 .GetProperty("Default", BindingFlags.Static | BindingFlags.Public).GetValue(null);
@@ -322,5 +372,13 @@ namespace Xunit.ScenarioReporting
         /// </summary>
         /// <param name="then">The thens of the scenarioRunner</param>
         void Then(params TT[] then);
+
+        /// <summary>
+        /// Specify that the When should throw an exception
+        /// </summary>
+        /// <typeparam name="T">The type of expected exception</typeparam>
+        /// <param name="exception"></param>
+        /// <param name="verifyMessage">If true then then the message of the exception as well as the type will be checked. If false, only the type of exception thrown will be checked.</param>
+        void Throws<T>(T exception, bool verifyMessage = true) where T : Exception;
     }
 }
