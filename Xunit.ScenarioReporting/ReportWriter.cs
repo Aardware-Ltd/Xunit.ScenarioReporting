@@ -177,8 +177,19 @@ namespace Xunit.ScenarioReporting
             await writer.WriteStartElementAsync(null, XmlTagScenario, null);
 
             await writer.WriteElementStringAsync(null, XmlTagName, null, start.Name);
-            await writer.WriteElementStringAsync(null, XmlTagNDG, null, Wordify(start.Name));
+            // Create a Wordified Name (currently as NDG) only if there isn't a custom name. A custom name is one that isn't the same as the name in Scope.
+            if (String.Equals(start.Name, start.Scope))
+            {
+                // Current Name is not custom, create a Wordified name
+                await writer.WriteElementStringAsync(null, XmlTagNDG, null, Wordify(start.Name));
+            }
+            else
+            {
+                // Current Name is custom, don't create a Wordified name
+                await writer.WriteElementStringAsync(null, XmlTagNDG, null, "[None created, because Name is a custom name.]");
+            }
             await writer.WriteElementStringAsync(null, XmlTagScope, null, start.Scope);
+
 
         }
 
