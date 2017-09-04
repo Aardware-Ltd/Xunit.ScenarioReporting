@@ -36,7 +36,7 @@ namespace Xunit.ScenarioReporting
         /// <summary>
         /// Provides an interface for adding details to the Given, When and then items
         /// </summary>
-        protected interface IAddDetail
+        protected internal interface IAddDetail
         {
             /// <summary>
             /// Adds a detail to a report item
@@ -53,7 +53,7 @@ namespace Xunit.ScenarioReporting
         /// <summary>
         /// Provides an interface for adding details to the Given, When and then items
         /// </summary>
-        protected interface IAddThenDetail
+        protected internal interface IAddThenDetail
         {
             /// <summary>
             /// Adds a mismatch to a report item
@@ -79,41 +79,20 @@ namespace Xunit.ScenarioReporting
 
         }
 
-        /// <summary>
-        /// Records a specified given for writing to the report.
-        /// </summary>
-        /// <param name="title">The title of the given.</param>
-        /// <param name="detailBuilder">A builder method to add details to the Given</param>
-        protected void RecordGiven(string title, Action<IAddDetail> detailBuilder)
+        internal void Add(Given given)
         {
-            var details = BuildDetails(detailBuilder);
-
-            _givens.Add(new Given(title, details));
+            _givens.Add(given);
         }
 
-        /// <summary>
-        /// Records the when for writing to the report.
-        /// </summary>
-        /// <param name="title">The title of the when</param>
-        /// <param name="detailBuilder">A builder method to add details to the When</param>
-        /// <remarks>If this method is not called, then the scenario run is considered a failure.</remarks>
-        protected void RecordWhen(string title, Action<IAddDetail> detailBuilder)
+        internal void Add(When when)
         {
-            var details = BuildDetails(detailBuilder);
-            _when = new When(title, details);
+            _when = when;
         }
 
-        /// <summary>
-        /// Records a specified then for writing to the report.
-        /// </summary>
-        /// <param name="title">The titile of the Then</param>
-        /// <param name="detailBuilder">A builder method to add details to the Then</param>
-        protected void RecordThen(string title, Action<IAddThenDetail> detailBuilder)
+        internal void Add(Then then)
         {
-            var details = BuildDetails(detailBuilder);
-            _thens.Add(new Then(null, title, details));
+            _thens.Add(then);
         }
-
         private static List<Detail> BuildDetails(Action<IAddDetail> detailBuilder)
         {
             var builder = new DetailAccumulator();
@@ -140,8 +119,10 @@ namespace Xunit.ScenarioReporting
             public IAddDetail Add(string name, object value, string format, Func<object, string> formatter)
             {
                 if(format != null && formatter != null) throw new ArgumentException("Cannot specify both format and formatter");
+                var subDetails = new DetailAccumulator();
                 Details.Add(new Detail(name, value, format, formatter));
-                return this;
+                
+                return subDetails;
             }
 
             public IAddThenDetail Mismatch(string name, object expected, object actual, string format = null, Func<object, string> formatter = null)
@@ -192,6 +173,9 @@ namespace Xunit.ScenarioReporting
         /// the name of the class fixture. if returned from a test, then the name of the test will be used.
         /// </summary>
         public string Title { get; set; }
+        /// <summary>
+        /// The scope of the scenario. This is determined by where the scenario runner is created, Test method, Class Fixture or Collection Fixture.
+        /// </summary>
         public string Scope { get; internal set; }
     }
 }

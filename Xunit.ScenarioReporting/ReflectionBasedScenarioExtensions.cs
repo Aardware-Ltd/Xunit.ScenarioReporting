@@ -16,6 +16,7 @@ namespace Xunit.ScenarioReporting
         /// <typeparam name="TThen">The base type of Then DTOs</typeparam>
         /// <param name="scenarioRunner">The scenarioRunner for which to build the definition</param>
         /// <param name="define">A method that takes the builder and calls methods on it to build the scenarioRunner.</param>
+        /// <param name="title">An optional title for the scenario. If not specified the name will be taken from the scope of the scenario (Test method, Class Fixture, Collection Fixture)</param>
         /// <returns></returns>
         public static Task<ScenarioRunResult> Run<TGiven, TWhen, TThen>(this ReflectionBasedScenarioRunner<TGiven, TWhen, TThen> scenarioRunner, Action<IDefine<TGiven, TWhen, TThen>> define, string title = null)
         {

@@ -9,22 +9,21 @@ namespace Xunit.ScenarioReporting.Results
         public object Value { get; }
         public string Format { get; }
         public Func<object, string> Formatter { get; }
-        public IReadOnlyList<Detail> Children => _children;
-
-        private List<Detail> _children; 
-
+        public IReadOnlyList<Detail> Children { get; }
+        private static readonly IReadOnlyList<Detail> EmptyChildren = new Detail[] { };
         public Detail(string name, object value, string format = null, Func<object, string> formatter = null)
         {
             Name = name;
             Value = value;
             Format = format;
             Formatter = formatter;
-            _children = new List<Detail>();
+            Children = EmptyChildren;
         }
 
-        public Detail(Detail parent, string name, object value, string format = null, Func<object, string> formatter = null) : this(name, value, format, formatter)
+        public Detail(IReadOnlyList<Detail> children, string name)
         {
-            parent._children.Add(this);
+            Name = name;
+            Children = children;
         }
     }
 }

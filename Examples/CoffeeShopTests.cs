@@ -25,7 +25,14 @@ namespace Examples
                 .When(new MakeFlatWhite(Guid.NewGuid()))
                 .Then(new MilkUsed(Guid.NewGuid(), 4), new CoffeeUsed(Guid.NewGuid(), 2)));
         }
-
+        [Fact]
+        public Task<ScenarioRunResult> WhenOrderingFlatWhitePartialMatch()
+        {
+            return new CoffeeShopScenarioRunner().Run(def => def
+                .Given(new CoffeeReceived(Guid.NewGuid(), 10), new MilkReceived(Guid.NewGuid(), 10))
+                .When(new MakeFlatWhite(Guid.NewGuid()))
+                .Then(new MilkUsed(Guid.NewGuid(), 4), new CoffeeUsed(Guid.NewGuid(), 3)));
+        }
         [Theory]
         [InlineData(10, 0, "Not enough milk")]
         [InlineData(10, 3, "Not enough milk")]
