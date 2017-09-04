@@ -177,7 +177,8 @@ namespace Xunit.ScenarioReporting
             await writer.WriteStartElementAsync(null, XmlTagScenario, null);
 
             await writer.WriteElementStringAsync(null, XmlTagName, null, start.Name);
-            await writer.WriteElementStringAsync(null, "NDG", null, Wordify(start.Name));
+            await writer.WriteElementStringAsync(null, XmlTagNDG, null, Wordify(start.Name));
+            await writer.WriteElementStringAsync(null, XmlTagScope, null, start.Scope);
 
         }
 
@@ -196,6 +197,7 @@ namespace Xunit.ScenarioReporting
             var then = (Then)item;
             //await writer.WriteLineAsync($"{H4} {then.Title}");
             await writer.WriteStartElementAsync(null, XmlTagThen, null);
+            await writer.WriteElementStringAsync(null, XmlTagScope, null, then.Scope);
             await WriteDetails(writer, then.Title, then.Details);
             await writer.WriteEndElementAsync();
         }

@@ -52,7 +52,6 @@
 						<div class="section-given">
 						<p><xsl:value-of select="Title"/></p><!--Title-->
 						<xsl:if test="Detail != ''" >
-							<!--<p>with <xsl:for-each select="Detail/Message"><xsl:value-of select="concat(., ' ')"/></xsl:for-each ></p>--><!--Message-->
               <p>with 
               <xsl:for-each select="Detail/.">
                 <xsl:value-of select="Name"/><xsl:text> </xsl:text><xsl:value-of select="Value"/>              
@@ -78,7 +77,6 @@
 						<div class="section-when">
 						<p><xsl:value-of select="Title"/></p><!--Title-->
 						<xsl:if test="Detail != ''" >
-							<!--<p>with <xsl:for-each select="Detail/Message"><xsl:value-of select="concat(., ' ')"/></xsl:for-each ></p>--><!--Message-->
               <p>with 
               <xsl:for-each select="Detail/.">
                 <xsl:value-of select="Name"/><xsl:text> </xsl:text><xsl:value-of select="Value"/>              
@@ -106,30 +104,28 @@
             </xsl:if>-->
 						<p><xsl:value-of select="Title"/></p><!--Title-->
   
-              <!--
-              <xsl:if test="count(Detail/Message) > 0" >
-                <p>with 
-                  <xsl:for-each select="Detail/Message">
-                    <xsl:value-of select="concat(., ' ')"/>
-                  </xsl:for-each >
-                </p>
-              </xsl:if>
-               -->
-
               <xsl:choose>
                 <xsl:when test="count(Detail/Failure) > 0">
                 <div class="status-failure">
-                  <xsl:for-each select="Detail/Failure/Mismatch">
-                    <!--<xsl:value-of select="concat(., ' ')"/>::FAILURE::-->
-                    <p><xsl:value-of select="Name"/> Mismatch:</p>
-                    <ul>
-                      <li>Expected: <xsl:value-of select="Expected/Value"/></li>
-                      <li>Actual: <xsl:value-of select="Actual/Value"/></li>
-                    </ul>
-                    <!--::FAILURE::-->
-                    <svg class="icon icon-error-x"><use xlink:href="#icon-error-x"></use></svg>
-                  </xsl:for-each >
-                </div>
+                  <div class="accordion error">
+                    <div class="tab">
+                      <xsl:for-each select="Detail/Failure/Mismatch">
+                      
+                        <input id="tab-fail-{generate-id(current())}-{position()}" type="checkbox" name="tabs" />
+                        <label for="tab-fail-{generate-id(current())}-{position()}">Failure: <span class="fail-message"><xsl:value-of select="Name"/> Mismatch</span></label>
+                        <div class="tab-content">
+                          <ul>
+                            <li>Expected: <xsl:value-of select="Expected/Value"/></li>
+                            <li>Actual: <xsl:value-of select="Actual/Value"/></li>
+                          </ul>
+                        </div> <!--tab-content -->
+                        <!--::FAILURE::-->
+                        <svg class="icon icon-error-x"><use xlink:href="#icon-error-x"></use></svg>
+                      </xsl:for-each >
+                    
+                    </div> <!--tab --> 
+                  </div> <!--accordion -->                    
+                </div> <!--status-failure -->
                 </xsl:when>
                 <xsl:otherwise>
                   <xsl:if test="count(Detail/.) > 0" >
