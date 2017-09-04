@@ -271,7 +271,7 @@ namespace Xunit.ScenarioReporting
                     var mismatch = detail as Mismatch;
                     if (mismatch != null)
                     {
-                        await WriteFailureMismatch(writer, mismatch.Name, mismatch.Value.ToString(), mismatch.Formatter(mismatch.Actual));
+                        await WriteFailureMismatch(writer, mismatch.Name, mismatch.Formatter(mismatch.Value), mismatch.Formatter(mismatch.Actual));
 
                     }
 
@@ -289,12 +289,12 @@ namespace Xunit.ScenarioReporting
                 else
                 {
                     await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
-                    await writer.WriteElementStringAsync(null, XmlTagValue, null, detail.Value.ToString());
+                    await writer.WriteElementStringAsync(null, XmlTagValue, null, $"{detail.Value}");
                     var mismatch = detail as Mismatch;
                     if (mismatch != null)
                     {
                         ////await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + mismatch.Actual);
-                        await WriteFailureMismatch(writer, mismatch.Name, mismatch.Value.ToString(), mismatch.Actual.ToString());
+                        await WriteFailureMismatch(writer, mismatch.Name, $"{mismatch.Value}", mismatch.Actual.ToString());
 
                     }
                 }

@@ -22,14 +22,17 @@ namespace Xunit.ScenarioReporting
             When = when;
             Then = then;
         }
-
+        /// <summary>
+        /// Gets or sets the scope of the scenario. Generally the scope will be set automatically
+        /// by the test framework.
+        /// </summary>
         public string Scope
         {
             get => _scope;
             set
             {
                 _scope = value;
-                Title = Title ?? _scope;
+                if(value == null) return;
                 if (Then.Any(x => x.Scope == null))
                 {
                     var temp = new List<Then>();

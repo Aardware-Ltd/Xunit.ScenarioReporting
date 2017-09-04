@@ -33,7 +33,7 @@
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Xml" Version="2.0.0" />
       <PackageReference Include="System.Xml.XDocument" Version="4.3.0" />
-      <PackageReference Include="xunit.extensibility.execution" Version="2.3.0-beta4-build3742" />
+      <PackageReference Include="xunit.extensibility.execution" Version="2.3.0-beta5-build3769" />
     </ItemGroup>
 
     <PropertyGroup>

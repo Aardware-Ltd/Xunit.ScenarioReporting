@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Xunit.ScenarioReporting.Results;
 
 namespace Xunit.ScenarioReporting
 {
@@ -20,6 +21,16 @@ namespace Xunit.ScenarioReporting
     /// <inheritdoc />
     public abstract class ReflectionBasedScenarioRunner<TGiven, TWhen, TThen> : ScenarioRunner
     {
+        /// <inheritdoc />
+        /// <summary>
+        /// Creates an instance of <see cref="T:Xunit.ScenarioReporting.ReflectionBasedScenarioRunner`3" />
+        /// </summary>
+        protected ReflectionBasedScenarioRunner()
+        {
+            _formatTypeStrings = new Dictionary<Type, string>();
+            _formatters = new Dictionary<Type, Func<object, string>>();
+            _skipTypes = new HashSet<Type>();
+        }
         /// <summary>
         /// Provides access to the scenarioRunner definition. The preferred way of builidng this is to use the <see cref="ReflectionBasedScenarioExtensions.Run{TGiven,TWhen,TThen}"/>
         /// method which provids a fluent builder for defining the current scenarioRunner.
@@ -54,8 +65,15 @@ namespace Xunit.ScenarioReporting
                 VerifyExceptionMessage = verifyMessage;
             }
 
+            /// <summary>
+            /// If set to true and <see cref="ExpectedException"/> is not null, then the exception message will be 
+            /// automatically verified as well as the type.
+            /// </summary>
             public bool VerifyExceptionMessage { get; set; }
-
+            
+            /// <summary>
+            /// The expected exception on running the scenario, or null if none is expected.
+            /// </summary>
             public Exception ExpectedException { get; }
 
             /// <summary>
@@ -119,6 +137,12 @@ namespace Xunit.ScenarioReporting
 
             if (_run) return;
             _run = true;
+            _reader = new ReflectionReader(_formatTypeStrings, _formatters, (type, property) =>
+            {
+                var properties = IgnoredByType(type);
+                return properties.Contains(property);
+            }, t => _skipTypes.Contains(t));
+            _comparer = new ReflectionComparerer(_reader, Comparers);
             RecordSetup();
             await Given(Definition.Given);
             try
@@ -137,33 +161,48 @@ namespace Xunit.ScenarioReporting
         private void Verify(Exception expected, Exception actual, bool verifyExceptionMessage)
         {
             if (expected == null) return;
-            RecordThen("Exception", detail =>
+            List<Detail> details = new List<Detail>();
+            Add(new Then(Scope, "Exception", details));
+            if (actual == null)
             {
-                if (actual == null)
-                {
-                    detail.Mismatch(expected.GetType().FullName, expected, actual);
-                    return;
-                }
-                if (actual.GetType() != expected.GetType())
-                    detail.Mismatch("Type", expected.GetType(), actual.GetType(), formatter: Formatters.FromClassName);
-                if(verifyExceptionMessage)
-                    if (expected.Message == actual.Message)
-                        detail.Match("Message", expected.Message);
-                    else
-                        detail.Mismatch("Message", expected.Message, actual.Message);
-            });
+                details.Add(new Mismatch(expected.GetType().FullName, expected, actual));
+                return;
+            }
+            if (actual.GetType() != expected.GetType())
+                details.Add(new Mismatch("Type", expected.GetType(), actual.GetType(), formatter: Formatters.FromClassName));
+            if (verifyExceptionMessage)
+                if (expected.Message == actual.Message)
+                    details.Add(new Match("Message", expected.Message));
+                else
+                    details.Add(new Mismatch("Message", expected.Message, actual.Message));
         }
 
         private void RecordSetup()
         {
             foreach (var given in Definition.Given)
             {
-                Report(given, base.RecordGiven);
+                var read = _reader.Read(given);
+                Add(new Given(read.Name, DetailsFromProperties(read.Properties)));
             }
             if (Definition.When != null)
-                Report(Definition.When, RecordWhen);
+            {
+                var read = _reader.Read(Definition.When);
+                Add(new When(read.Name, DetailsFromProperties(read.Properties)));
+            }
         }
 
+        IReadOnlyList<Detail> DetailsFromProperties(IReadOnlyList<ReadResult> properties)
+        {
+            var details = new List<Detail>();
+            foreach (var property in properties)
+            {
+                if(property.Properties.Count > 0) 
+                    details.Add(new Detail(DetailsFromProperties(property.Properties), property.Name));
+                else
+                    details.Add(new Detail(property.Name, property.Value, property.Format, property.Formatter));
+            }
+            return details;
+        }
         /// <summary>
         /// Applies the given DTOs to the subject under test.
         /// </summary>
@@ -246,89 +285,97 @@ namespace Xunit.ScenarioReporting
         internal void Verify(IReadOnlyList<TThen> expected, IReadOnlyList<TThen> actual)
         {
             var maxIterations = Math.Min(expected.Count, actual.Count);
-
-            //TODO: consider walking type tree until primitives
+            
             for (int i = 0; i < maxIterations; i++)
             {
 
                 var e = expected[i];
                 var a = actual[i];
-                RecordThen(e.GetType().Name, details =>
-                {
-                    if (a.GetType() != e.GetType())
-                    {
-
-                        details.Mismatch("Type", e, a, formatter: Formatters.FromClassName);
-
-                        return;
-                    }
-                    HashSet<string> ignored = IgnoredByType(e.GetType());
-                    
-                    foreach (var p in e.GetType().GetProperties())
-                    {
-                        if (ignored.Contains(p.Name)) continue;
-                        var ev = p.GetValue(e);
-                        var av = p.GetValue(a);
-                        if (!Comparers.TryGetValue(p.PropertyType, out var comparer))
-                        {
-                            comparer = (IEqualityComparer)typeof(EqualityComparer<>).MakeGenericType(p.PropertyType)
-                                .GetProperty("Default", BindingFlags.Static | BindingFlags.Public).GetValue(null);
-                        }
-                        if (!comparer.Equals(ev, av))
-                        {
-                            //fail and continue
-                            details.Mismatch(p.Name, ev, av);
-                        }
-                        else
-                        {
-                            details.Match(p.Name, ev);
-                        }
-                    }
-                });
+                Add(_comparer.Compare(Scope, e, a));
             }
             if (expected.Count > actual.Count)
             {
                 for (int i = Math.Max(0, actual.Count - 1); i < expected.Count; i++)
                 {
-                    RecordThen("Missing expected results", details => details.Mismatch("Type", expected[i], null, formatter: Formatters.FromClassName));
+                    Add(new Then(Scope, "Missing expected results", new Detail[]{ new Mismatch("Type", expected[i], null, formatter: Formatters.FromClassName)}));
                 }
             }
             if (actual.Count > expected.Count)
             {
                 for (int i = Math.Max(0, expected.Count - 1); i < actual.Count; i++)
                 {
-                    RecordThen("More results than expected", details => details.Mismatch("Type", null, actual[i], formatter: Formatters.FromClassName));
+                    Add(new Then(Scope, "More results than expected", new Detail[] { new Mismatch("Type", null, actual[i], formatter: Formatters.FromClassName)}));
                 }
             }
         }
 
-        void DetailFromProperties(IAddDetail details, object instance, Type type)
-        {
-            var ignored = IgnoredByType(type);
-            if (type.IsPrimitive)
-                details.Add("Value", instance);
-            var properties = type.GetProperties().Where(p => !ignored.Contains(p.Name));
-            foreach (var property in properties)
-                details.Add(property.Name, property.GetValue(instance));//TODO: Add looking up formatters and format strings
-        }
+//        void DetailFromProperties(IAddDetail details, object instance, Type type)
+//        {
+//            var ignored = IgnoredByType(type);
+//            if (type.IsPrimitive)
+//                details.Add("Value", instance);
+//            var properties = type.GetProperties().Where(p => !ignored.Contains(p.Name));
+//            foreach (var property in properties)
+//            {
+//                _formatTypeStrings.TryGetValue(property.PropertyType, out var formatString);
+//                details.Add(property.Name, property.GetValue(instance), formatString);//TODO: Add looking up formatters and format strings
+//}
+//        }
 
-        private void Report(object instance, Action<string, Action<IAddDetail>> create)
+//        private void Report(object instance, Action<string, Action<IAddDetail>> create)
+//        {
+//            var type = instance.GetType();
+//            create(type.Name, details => DetailFromProperties(details, instance, type));
+//        }
+
+        private readonly Dictionary<Type, string> _formatTypeStrings;
+        private readonly Dictionary<Type, Func<object, string>> _formatters;
+        private ReflectionReader _reader;
+        private ReflectionComparerer _comparer;
+        private readonly HashSet<Type> _skipTypes;
+
+        /// <summary>
+        /// Specifies a string to use to format a type.
+        /// </summary>
+        /// <typeparam name="T">The type to format.</typeparam>
+        /// <param name="format">The format string used to format instance of the specified type.</param>
+        protected void AddFormatString<T>(string format)
         {
-            var type = instance.GetType();
-            create(type.Name, details => DetailFromProperties(details, instance, type));
+            _formatTypeStrings[typeof(T)] = format;
         }
     }
 
+    /// <inheritdoc />
+    /// <summary>
+    /// Scenario runner used when some state is required for additional verification than just verifying the <typeparamref name="TThen"/>s.
+    /// </summary>
+    /// <typeparam name="TGiven">The base class for the Given types</typeparam>
+    /// <typeparam name="TWhen">The base class for the When type</typeparam>
+    /// <typeparam name="TThen">The base class for the Then types</typeparam>
+    /// <typeparam name="TState">The type of the state object that will be available for additional verification after running.</typeparam>
     public abstract class ReflectionBasedScenarioRunner<TGiven, TWhen, TThen, TState> : ReflectionBasedScenarioRunner<TGiven, TWhen, TThen> where TState : class
     {
-        protected async override Task Run()
+        /// <inheritdoc />
+        /// <summary>
+        /// Runs the scenario and calls the <see cref="M:Xunit.ScenarioReporting.ReflectionBasedScenarioRunner`4.AcquireState" /> method to get the state.
+        /// </summary>
+        /// <returns>A task that completes after the scenario has been run and the state is available.</returns>
+        /// <remarks>If the state has already been collected then the scenario will not be rerun, the <see cref="M:Xunit.ScenarioReporting.ReflectionBasedScenarioRunner`4.AcquireState" /> method will
+        /// not be called and the state will be the original collected state.</remarks>
+        protected override async Task Run()
         {
             await base.Run();
             if(State == null)
                 State = await AcquireState();
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns>The state that will be used for further verification of the scenario.</returns>
         protected abstract Task<TState> AcquireState();
+        /// <summary>
+        /// The state for additional verification. This will be available after the scenario has been run.
+        /// </summary>
         public TState State { get; private set; }
     }
 
