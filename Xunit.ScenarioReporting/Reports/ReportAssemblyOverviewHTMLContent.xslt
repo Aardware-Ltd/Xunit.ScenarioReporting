@@ -143,6 +143,34 @@
 				</xsl:otherwise>
 				</xsl:choose>
 				</div><!--section-thens-->
+
+        <div class="accordion tech">
+          <div class="tab">
+            <input id="tab-tech-{generate-id(current())}-{position()}" type="checkbox" name="tabs" />
+            <label for="tab-tech-{generate-id(current())}-{position()}">Nerd Area</label>
+            <div class="tab-content">
+
+              <xsl:if test="count(Scope) > 0">
+                <p>Scenario Scope</p>
+                <ul>                
+                <xsl:for-each select="Scope">
+                  <li><xsl:value-of select="."/></li>            
+                </xsl:for-each>
+                </ul>
+              </xsl:if>
+              <xsl:if test="count(Then/Scope) > 0">
+                <p>Then Scope(s)</p>
+                <ul>                
+                <xsl:for-each select="Then/Scope">
+                  <li><xsl:value-of select="."/></li>
+                </xsl:for-each>
+                </ul>
+              </xsl:if>              
+            </div> <!--tab-content -->
+          </div><!--tech-->
+        </div><!--tech-->
+          
+          
 				<p><a href="#top">Back to top</a></p>
 
         </section><!--section-scenario-->
