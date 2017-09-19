@@ -12,10 +12,10 @@ namespace Examples
         [Fact]
         public Task<ScenarioRunResult> Nested()
         {
-            var expected = new NestedThen("Party at", DateTimeOffset.Now.AddDays(2), new AdditionalThenDetails("Bring food"));
+            var expected = new NestedThen("Party at", DateTimeOffset.Now.AddDays(2), new AdditionalThenDetails("Bring food", new EvenMoreNestedThen(long.MaxValue, SomeStatus.ClosedForHolidays)));
             return new Runner(expected).Run(def =>
-                def.Given(new NestedGiven("Test Given", 42, new AdditionalGivenDetails("Test nested given")))
-                .When(new NestedWhen("Test When", DateTime.Now, new AdditionalWhenDetails("Additional")))
+                def.Given(new NestedGiven("Test Given", 42, new AdditionalGivenDetails("Test nested given", new MoreGivenNesting("Really arbitrary name", SomeStatus.Open))))
+                .When(new NestedWhen("Test When", DateTime.Now, new AdditionalWhenDetails("Additional", new EvenMoreNestedWhen(TimeSpan.FromDays(8), SomeStatus.Understaffed))))
                 .Then(expected));
         }
 
@@ -59,11 +59,33 @@ namespace Examples
         class AdditionalGivenDetails
         {
             public string Text { get; }
+            public MoreGivenNesting EvenMoreAdditions { get; }
 
-            public AdditionalGivenDetails(string text)
+            public AdditionalGivenDetails(string text, MoreGivenNesting evenMoreAdditions)
             {
                 Text = text;
+                EvenMoreAdditions = evenMoreAdditions;
             }
+        }
+
+        enum SomeStatus
+        {
+            Unknown,
+            Open,
+            Closed,
+            Understaffed,
+            ClosedForHolidays
+        }
+
+        class MoreGivenNesting
+        {
+            public MoreGivenNesting(string someNestedName, SomeStatus status)
+            {
+                SomeNestedName = someNestedName;
+                Status = status;
+            }
+            public string SomeNestedName { get; }
+            public SomeStatus Status { get; }
         }
 
         class NestedWhen
@@ -83,13 +105,26 @@ namespace Examples
         class AdditionalWhenDetails
         {
             public string Fluff { get; }
+            public EvenMoreNestedWhen MoreThings { get; }
 
-            public AdditionalWhenDetails(string fluff)
+            public AdditionalWhenDetails(string fluff, EvenMoreNestedWhen moreThings)
             {
                 Fluff = fluff;
+                MoreThings = moreThings;
             }
         }
 
+        class EvenMoreNestedWhen
+        {
+            public EvenMoreNestedWhen(TimeSpan period, SomeStatus status)
+            {
+                Period = period;
+                Status = status;
+            }
+
+            public TimeSpan Period { get; }
+            public SomeStatus Status { get; }
+        }
         class NestedThen
         {
             public string Text { get; }
@@ -107,11 +142,25 @@ namespace Examples
         class AdditionalThenDetails
         {
             public string Text { get; }
+            public EvenMoreNestedThen AdditionalDetails { get; }
 
-            public AdditionalThenDetails(string text)
+            public AdditionalThenDetails(string text, EvenMoreNestedThen additionalDetails)
             {
                 Text = text;
+                AdditionalDetails = additionalDetails;
             }
+        }
+
+        class EvenMoreNestedThen
+        {
+            public EvenMoreNestedThen(long biggerNumber, SomeStatus status)
+            {
+                BiggerNumber = biggerNumber;
+                Status = status;
+            }
+
+            public long BiggerNumber { get; }
+            public SomeStatus Status { get; }
         }
     }
 }
