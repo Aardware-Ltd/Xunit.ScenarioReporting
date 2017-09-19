@@ -10,23 +10,26 @@ namespace Xunit.ScenarioReporting
 {
     internal class ReflectionReader
     {
+        private readonly Dictionary<Type, Func<string, object, ObjectPropertyDefinition>> _customPropertyReaders;
         readonly Func<Type, string, bool> _skipProperty;
         private Func<Type, bool> _skipType;
 
         public ReflectionReader(
             Dictionary<Type, string> formatStrings,
             Dictionary<Type, Func<object, string>> formatters,
-            Func<Type, string, bool> skipProperty,
+            Dictionary<Type, Func<string, object, ObjectPropertyDefinition>> customPropertyReaders,
+        Func<Type, string, bool> skipProperty,
             Func<Type, bool> skipType)
         {
             _skipProperty = skipProperty;
             _skipType = skipType;
+            _customPropertyReaders = customPropertyReaders;
         }
-        public ReadResult Read(object value)
+        public ObjectPropertyDefinition Read(object value)
         {
             var pending = new Stack<ToRead>();
             List<object> visited = new List<object>();
-            var topLevel = new List<ReadResult>();
+            var topLevel = new List<ObjectPropertyDefinition>();
             pending.Push(new ToRead(value.GetType(), TypeName(value.GetType()), value, topLevel));
 
             while (pending.Count > 0)
@@ -34,13 +37,13 @@ namespace Xunit.ScenarioReporting
                 var current = pending.Pop();
                 if (visited.Contains(current.Value)) continue;
                 visited.Add(current.Value);
-                var currentProps = new List<ReadResult>();
+                var currentProps = new List<ObjectPropertyDefinition>();
 
-                current.Parent.Add(new ReadResult(current.Type, current.Name, current.Value, null, null,
+                current.Parent.Add(new ObjectPropertyDefinition(current.Type, current.Name, current.Value, null, null,
                     currentProps));
-                //if (CustomProperties(currentProps)) continue;
+                if (CustomProperties(current.Type, current.Name, current.Value,current.Parent)) continue;
                 if (SkipType(current.Type)) continue;
-                
+
                 if (current.Value is IDictionary)
                 {
                     var entries = new Dictionary<object, object>();
@@ -72,13 +75,13 @@ namespace Xunit.ScenarioReporting
                 {
                     foreach (var p in current.Type.GetProperties().Reverse())
                     {
-                        if(_skipProperty(current.Type, p.Name)) continue;
+                        if (_skipProperty(current.Type, p.Name)) continue;
                         value = p.GetValue(current.Value);
                         if (pending.Any(x => ReferenceEquals(value, x.Value))) continue;
                         pending.Push(new ToRead(p.PropertyType, p.Name, value, currentProps));
                         if (pending.Count > 10000)
                         {
-                            throw new Exception($"Type {current.Type} appears to be endlessly recursive or has more properties than can sensibly be compared, please specify a custom property reader or skip the properties for this type"){Data ={["PendingStack"] = pending.Select(x=>x.Type).ToArray()}};
+                            throw new Exception($"Type {current.Type} appears to be endlessly recursive or has more properties than can sensibly be compared, please specify a custom property reader or skip the properties for this type") { Data = { ["PendingStack"] = pending.Select(x => x.Type).ToArray() } };
                         }
                     }
                 }
@@ -86,6 +89,16 @@ namespace Xunit.ScenarioReporting
             return topLevel[0];
         }
 
+        bool CustomProperties(Type type, string name, object instance, List<ObjectPropertyDefinition> definitions)
+        {
+            if (_customPropertyReaders.TryGetValue(type, out var reader))
+            {
+                var def = reader(name, instance);
+                definitions.Add(def);
+                return true;
+            }
+            return false;
+        }
         string Format(object value)
         {
             if (value == null) return null;
@@ -107,7 +120,7 @@ namespace Xunit.ScenarioReporting
 
         bool SkipType(Type type)
         {
-            return type.IsPrimitive || type == typeof(DateTime) || type == typeof(string) /*|| type == typeof(DateTimeOffset)*/ || _skipType(type);
+            return type.IsPrimitive || type == typeof(DateTime) || type == typeof(string) || type == typeof(DateTimeOffset) || _skipType(type);
         }
 
         struct ToRead
@@ -115,9 +128,9 @@ namespace Xunit.ScenarioReporting
             public Type Type { get; }
             public string Name { get; }
             public object Value { get; }
-            public List<ReadResult> Parent { get; }
+            public List<ObjectPropertyDefinition> Parent { get; }
 
-            public ToRead(Type type, string name, object value, List<ReadResult> parent)
+            public ToRead(Type type, string name, object value, List<ObjectPropertyDefinition> parent)
             {
                 Type = type;
                 Name = name;
@@ -127,9 +140,9 @@ namespace Xunit.ScenarioReporting
         }
     }
 
-    internal class ReadResult
+    public class ObjectPropertyDefinition
     {
-        public ReadResult(Type type, string name, object value, string format, Func<object, string> formatter, IReadOnlyList<ReadResult> properties)
+        public ObjectPropertyDefinition(Type type, string name, object value, string format, Func<object, string> formatter, IReadOnlyList<ObjectPropertyDefinition> properties)
         {
             Type = type;
             Name = name;
@@ -144,7 +157,7 @@ namespace Xunit.ScenarioReporting
         public object Value { get; }
         public string Format { get; }
         public Func<object, string> Formatter { get; }
-        public IReadOnlyList<ReadResult> Properties { get; }
+        public IReadOnlyList<ObjectPropertyDefinition> Properties { get; }
 
     }
 
@@ -164,7 +177,7 @@ namespace Xunit.ScenarioReporting
             var actualStructure = _reader.Read(actual);
 
             var expectedStack = new Stack<ExpectedReadResult>();
-            var actualStack = new Stack<ReadResult>();
+            var actualStack = new Stack<ObjectPropertyDefinition>();
 
             var details = new List<Detail>();
 
@@ -178,7 +191,7 @@ namespace Xunit.ScenarioReporting
             return new Then(scope, expectedStructure.Name, details);
         }
 
-        void Compare(Stack<ExpectedReadResult> pendingExpected, Stack<ReadResult> pendingActual)
+        void Compare(Stack<ExpectedReadResult> pendingExpected, Stack<ObjectPropertyDefinition> pendingActual)
         {
 
             while (pendingExpected.Count > 0)
@@ -191,8 +204,8 @@ namespace Xunit.ScenarioReporting
 
         }
 
-        private void Compare(Stack<ExpectedReadResult> pendingExpected, Stack<ReadResult> pendingActual, ExpectedReadResult expectedComparison,
-            ReadResult actual)
+        private void Compare(Stack<ExpectedReadResult> pendingExpected, Stack<ObjectPropertyDefinition> pendingActual, ExpectedReadResult expectedComparison,
+            ObjectPropertyDefinition actual)
         {
             var expected = expectedComparison.Value;
             var parent = expectedComparison.Parent;
@@ -229,14 +242,14 @@ namespace Xunit.ScenarioReporting
 
         struct ExpectedReadResult
         {
-            public ExpectedReadResult(List<Detail> parent, ReadResult value)
+            public ExpectedReadResult(List<Detail> parent, ObjectPropertyDefinition value)
             {
                 Parent = parent;
                 Value = value;
             }
 
             public List<Detail> Parent { get; }
-            public ReadResult Value { get; }
+            public ObjectPropertyDefinition Value { get; }
         }
 
         static readonly ConcurrentDictionary<Type, IEqualityComparer> DefaultComparers = new ConcurrentDictionary<Type, IEqualityComparer>();

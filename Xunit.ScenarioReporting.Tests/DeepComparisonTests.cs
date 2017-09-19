@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Reflection;
-using System.Text;
 using Xunit.ScenarioReporting.Results;
 
 namespace Xunit.ScenarioReporting.Tests
@@ -16,7 +12,7 @@ namespace Xunit.ScenarioReporting.Tests
 
         public DeepComparisonTests()
         {
-            var reader = new ReflectionReader(new Dictionary<Type, string>(), new Dictionary<Type, Func<object, string>>(),
+            var reader = new ReflectionReader(new Dictionary<Type, string>(), new Dictionary<Type, Func<object, string>>(), new Dictionary<Type, Func<string, object, ObjectPropertyDefinition>>(), 
                 (_, __) => false, _ => false);
             _comparer = new ReflectionComparerer(reader, new Dictionary<Type, IEqualityComparer>());
         }
@@ -87,7 +83,7 @@ namespace Xunit.ScenarioReporting.Tests
 
         public DeepReadTests()
         {
-            _reader = new ReflectionReader(new Dictionary<Type, string>(),new Dictionary<Type, Func<object, string>>(), (_, __) => false, _=>false);
+            _reader = new ReflectionReader(new Dictionary<Type, string>(),new Dictionary<Type, Func<object, string>>(), new Dictionary<Type, Func<string, object, ObjectPropertyDefinition>>(), (_, __) => false, _=>false);
         }
         class TestData
         {
@@ -96,7 +92,7 @@ namespace Xunit.ScenarioReporting.Tests
                 yield return new object[] {"test", typeof(string), "String"};
                 yield return new object[] {4.12m, typeof(decimal), "Decimal"};
                 yield return new object[] {2.14d, typeof(Double), nameof(Double)};
-                yield return new object[] { DateTime.Now, typeof(DateTime), nameof(DateTime) };
+                yield return new object[] { new DateTime(1999, 12, 31, 23, 59, 59), typeof(DateTime), nameof(DateTime) };
                 yield return new object[] {(byte)0x2, typeof(Byte), nameof(Byte)};
             }
         }
@@ -202,7 +198,7 @@ namespace Xunit.ScenarioReporting.Tests
                 r => AssertElement(r, "Field2", 3)
             );
 
-            void AssertElement(ReadResult r, string field, int value)
+            void AssertElement(ObjectPropertyDefinition r, string field, int value)
             {
                 Assert.Equal(typeof(int), r.Type);
                 Assert.Equal(field, r.Name);
@@ -227,7 +223,7 @@ namespace Xunit.ScenarioReporting.Tests
             Assert.Null(read.Format);
             Assert.Null(read.Formatter);
 
-            void AssertElement(ReadResult r, int v, int index)
+            void AssertElement(ObjectPropertyDefinition r, int v, int index)
             {
                 Assert.Equal(typeof(int), r.Type);
                 Assert.Equal($"[{index}]", r.Name);
@@ -252,7 +248,7 @@ namespace Xunit.ScenarioReporting.Tests
             Assert.Null(read.Format);
             Assert.Null(read.Formatter);
 
-            void AssertElement(ReadResult r, int index)
+            void AssertElement(ObjectPropertyDefinition r, int index)
             {
                 Assert.Equal(typeof(int), r.Type);
                 Assert.Equal($"[{index}]", r.Name);

@@ -1,8 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using Xunit.ScenarioReporting.Results;
 
@@ -30,6 +28,7 @@ namespace Xunit.ScenarioReporting
             _formatTypeStrings = new Dictionary<Type, string>();
             _formatters = new Dictionary<Type, Func<object, string>>();
             _skipTypes = new HashSet<Type>();
+            _customPropertyReaders = new Dictionary<Type, Func<string, object, ObjectPropertyDefinition>>();
         }
         /// <summary>
         /// Provides access to the scenarioRunner definition. The preferred way of builidng this is to use the <see cref="ReflectionBasedScenarioExtensions.Run{TGiven,TWhen,TThen}"/>
@@ -137,7 +136,7 @@ namespace Xunit.ScenarioReporting
 
             if (_run) return;
             _run = true;
-            _reader = new ReflectionReader(_formatTypeStrings, _formatters, (type, property) =>
+            _reader = new ReflectionReader(_formatTypeStrings, _formatters, _customPropertyReaders, (type, property) =>
             {
                 var properties = IgnoredByType(type);
                 return properties.Contains(property);
@@ -165,7 +164,7 @@ namespace Xunit.ScenarioReporting
             Add(new Then(Scope, "Exception", details));
             if (actual == null)
             {
-                details.Add(new Mismatch(expected.GetType().FullName, expected, actual));
+                details.Add(new Mismatch(expected.GetType().FullName, expected, null));
                 return;
             }
             if (actual.GetType() != expected.GetType())
@@ -191,7 +190,7 @@ namespace Xunit.ScenarioReporting
             }
         }
 
-        IReadOnlyList<Detail> DetailsFromProperties(IReadOnlyList<ReadResult> properties)
+        IReadOnlyList<Detail> DetailsFromProperties(IReadOnlyList<ObjectPropertyDefinition> properties)
         {
             var details = new List<Detail>();
             foreach (var property in properties)
@@ -282,7 +281,8 @@ namespace Xunit.ScenarioReporting
             EnsureInitialized();
             return Filter();
         }
-        internal void Verify(IReadOnlyList<TThen> expected, IReadOnlyList<TThen> actual)
+
+        private void Verify(IReadOnlyList<TThen> expected, IReadOnlyList<TThen> actual)
         {
             var maxIterations = Math.Min(expected.Count, actual.Count);
             
@@ -308,28 +308,9 @@ namespace Xunit.ScenarioReporting
                 }
             }
         }
-
-//        void DetailFromProperties(IAddDetail details, object instance, Type type)
-//        {
-//            var ignored = IgnoredByType(type);
-//            if (type.IsPrimitive)
-//                details.Add("Value", instance);
-//            var properties = type.GetProperties().Where(p => !ignored.Contains(p.Name));
-//            foreach (var property in properties)
-//            {
-//                _formatTypeStrings.TryGetValue(property.PropertyType, out var formatString);
-//                details.Add(property.Name, property.GetValue(instance), formatString);//TODO: Add looking up formatters and format strings
-//}
-//        }
-
-//        private void Report(object instance, Action<string, Action<IAddDetail>> create)
-//        {
-//            var type = instance.GetType();
-//            create(type.Name, details => DetailFromProperties(details, instance, type));
-//        }
-
         private readonly Dictionary<Type, string> _formatTypeStrings;
         private readonly Dictionary<Type, Func<object, string>> _formatters;
+        private readonly Dictionary<Type, Func<string, object, ObjectPropertyDefinition>> _customPropertyReaders;
         private ReflectionReader _reader;
         private ReflectionComparerer _comparer;
         private readonly HashSet<Type> _skipTypes;
@@ -342,6 +323,16 @@ namespace Xunit.ScenarioReporting
         protected void AddFormatString<T>(string format)
         {
             _formatTypeStrings[typeof(T)] = format;
+        }
+
+        protected void AddFormatter<T>(Func<T, string> formatter)
+        {
+            _formatters.Add(typeof(T), o => formatter((T)o));
+        }
+
+        protected void AddCustomPropertyReader<T>(Func<T, string, ObjectPropertyDefinition> reader)
+        {
+            _customPropertyReaders.Add(typeof(T), (s, o) => reader((T)o, s));
         }
     }
 
