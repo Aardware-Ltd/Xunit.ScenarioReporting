@@ -94,7 +94,7 @@
 				<xsl:variable name="cntThen" select="count(Then)" />
 				<xsl:choose>
 				<xsl:when test="$cntThen = 0">
-					<p>[There are no Whens]</p>
+					<p>[There are no Thens]</p>
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:for-each select="Then">
