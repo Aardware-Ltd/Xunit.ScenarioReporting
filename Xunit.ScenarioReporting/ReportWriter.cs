@@ -233,8 +233,6 @@ namespace Xunit.ScenarioReporting
                 
                 if (detail is Failure || detail is Mismatch)
                 {
-                    //await writer.WriteElementStringAsync(null, XMLTagMessage, null, "FAILED " + " " + detail.Name);
-                    ////await writer.WriteElementStringAsync(null, XmlTagFailure, null, detail.Name);
 
                     if (detail is Failure)
                     {
@@ -293,13 +291,19 @@ namespace Xunit.ScenarioReporting
                     var mismatch = detail as Mismatch;
                     if (mismatch != null)
                     {
-                        ////await writer.WriteElementStringAsync(null, XmlTagMessage, null, mismatch.Name + " " + mismatch.Actual);
                         await WriteFailureMismatch(writer, mismatch.Name, $"{mismatch.Value}", mismatch.Actual.ToString());
-
                     }
                 }
 
-                await writer.WriteEndElementAsync();
+                //Recurse any children
+                foreach (var childDetail in detail.Children)
+                {
+                    await writer.WriteStartElementAsync(null, XmlTagChild, null);
+                    await WriteDetails(writer, childDetail.Name, childDetail.Children);
+                    await writer.WriteEndElementAsync(); // /Child
+                } 
+
+                await writer.WriteEndElementAsync(); // /Detail
             }
 
         }
