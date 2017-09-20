@@ -1,26 +1,104 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-<xsl:output version="1.0" encoding="UTF-8" indent="no" omit-xml-declaration="yes"/>
+  <xsl:output version="1.0" encoding="UTF-8" indent="no" omit-xml-declaration="yes"/>
   <xsl:strip-space elements="*" />
-  <xsl:template match="/">
-    <xsl:text>## </xsl:text><a name="top"><xsl:text>Here's what happened</xsl:text></a>
+
+  <xsl:template match="Given|When|Then">
+    <xsl:value-of select="Title"/>
+    <xsl:text>&#xd;&#xd;</xsl:text>
+    <xsl:if test="not(descendant::Failure)">
+      <xsl:apply-templates select="Detail"></xsl:apply-templates>
+    </xsl:if>
+    <xsl:apply-templates select ="Detail/Failure"></xsl:apply-templates>
+    <xsl:if test="position() != last()">
+      <xsl:text>&#xd;&#xd;[and]&#xd;&#xd;</xsl:text>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="Child">
+    <!--<xsl:text>[In Child node. Calling indent on count Ancestor Detail=</xsl:text><xsl:value-of select="count(ancestor::Detail)"/><xsl:text>]</xsl:text><xsl:text>&#xd;&#xd;</xsl:text>-->
+    <xsl:call-template name="indent">
+      <xsl:with-param name="n" select="count(ancestor::Detail)"/>
+    </xsl:call-template>
+    <xsl:value-of select="Title"/><!--<xsl:text>[A Title inside a Child node. Ancestor Child=</xsl:text><xsl:value-of select="count(ancestor::Child)"/><xsl:text> Ancestor Detail=</xsl:text><xsl:value-of select="count(ancestor::Detail)"/><xsl:text>]</xsl:text>-->
+    <xsl:text>&#xd;&#xd;</xsl:text>
+    <xsl:apply-templates select="Detail"></xsl:apply-templates>
+  </xsl:template>
+
+  <xsl:template match="Detail">
+    <!--<xsl:text>[In Detail node. Calling indent on count Ancestor Detail=</xsl:text><xsl:value-of select="count(ancestor::Detail)"/><xsl:text>]</xsl:text><xsl:text>&#xd;&#xd;</xsl:text>-->
+    <xsl:call-template name="indent">
+      <xsl:with-param name="n" select="count(ancestor::Detail)"/>
+    </xsl:call-template>
+    <xsl:text> with </xsl:text>
+    <xsl:value-of select="Name"/>
+    <xsl:text> </xsl:text>
+    <xsl:value-of select="Value"/><!--<xsl:text>[A Name-Value pair inside a Detail node. Ancestor Child=</xsl:text><xsl:value-of select="count(ancestor::Child)"/><xsl:text> Ancestor Detail=</xsl:text><xsl:value-of select="count(ancestor::Detail)"/><xsl:text>]</xsl:text>-->
+    <xsl:text>&#xd;&#xd;</xsl:text>
+    <xsl:apply-templates select="Child"></xsl:apply-templates>
+  </xsl:template>
+
+  <xsl:template match="Mismatch">
+    <xsl:text>&#xd;&#xd;</xsl:text>
+    <xsl:text>```&#xd;&#xd;</xsl:text>
+    <xsl:value-of select="Name"/>
+    <xsl:text> Mismatch:&#xd;</xsl:text>
+    <xsl:text>* Expected: </xsl:text>
+    <xsl:value-of select="Expected/Value"/>
     <xsl:text>&#xd;</xsl:text>
-    <xsl:text>Looking at Assembly **</xsl:text><xsl:value-of select="Assembly/Name"/><xsl:text>** of **</xsl:text><xsl:value-of select="Assembly/Time"/><xsl:text>** with the following Scenarios.</xsl:text>
+    <xsl:text>* Actual: </xsl:text>
+    <xsl:value-of select="Actual/Value"/>
+    <xsl:text>&#xd;</xsl:text>
+    <xsl:text>&#xd;```</xsl:text>
+    <xsl:text>&#xd;&#xd;```::FAILURE::```&#xd;&#xd;</xsl:text>
+  </xsl:template>
+
+  <xsl:template match="Scope">
+    <xsl:text>* </xsl:text>
+    <xsl:value-of select="."/>
+    <xsl:text>&#xd;</xsl:text>
+  </xsl:template>
+
+  <xsl:template name="indent">
+      <xsl:param name="n"/>
+      <xsl:if test="$n > 0">                              
+          <xsl:call-template name="indent">                
+              <xsl:with-param name="n" select="$n - 1"/>  <!-- recurse n-1 -->
+          </xsl:call-template>
+          <xsl:text>>&#xA0;&#xA0;&#xA0;   </xsl:text>                  
+      </xsl:if>
+  </xsl:template>
+  
+  <xsl:template match="/">
+    <a name="top">
+      <xsl:text>&#xd;</xsl:text>
+    </a>
+    <xsl:text>&#xd;</xsl:text>
+    <xsl:text>&#xd;</xsl:text>
+    <xsl:text>## Here's what happened</xsl:text>
+    <xsl:text>&#xd;</xsl:text>
+    <xsl:text>Looking at Assembly **</xsl:text>
+    <xsl:value-of select="Assembly/Name"/>
+    <xsl:text>** of **</xsl:text>
+    <xsl:value-of select="Assembly/Time"/>
+    <xsl:text>** with the following Scenarios.</xsl:text>
     <xsl:text>&#xd;</xsl:text>
 
     <xsl:variable name="cntDefinition" select="count(Assembly/Definition)" />
-  
-    <xsl:value-of select="$cntDefinition" /><xsl:text> Scenarios(s):</xsl:text>
+
+    <xsl:value-of select="$cntDefinition" />
+    <xsl:text> Scenarios(s):</xsl:text>
     <xsl:text>&#xd;</xsl:text>
     <xsl:if test="$cntDefinition = 0">
       <xsl:text>[There are no Scenarios.]</xsl:text>
       <xsl:text>&#xd;</xsl:text>
     </xsl:if>
-		
+
     <xsl:if test="$cntDefinition > 0">
       <xsl:for-each select="Assembly/Definition">
         <xsl:variable name="navID" select="generate-id(Name)" />
-        <xsl:text>* [</xsl:text><xsl:value-of select="Name" />
+        <xsl:text>* [</xsl:text>
+        <xsl:value-of select="Name" />
         <xsl:text>](&#35;</xsl:text>
         <xsl:value-of select="$navID" />
         <xsl:text>)</xsl:text>
@@ -42,8 +120,10 @@
     <xsl:text>&#xd;</xsl:text>
 
     <xsl:for-each select="Assembly/Definition">
-      <a name="{generate-id(Name)}"><xsl:text>&#xd;</xsl:text></a>
-        
+      <a name="{generate-id(Name)}">
+        <xsl:text>&#xd;</xsl:text>
+      </a>
+
       <xsl:text>&#xd;</xsl:text>
       <xsl:text>&#xd;</xsl:text>
 
@@ -58,11 +138,13 @@
 
       <xsl:text>### Scenario</xsl:text>
       <xsl:text>&#xd;</xsl:text>
-  
-      <xsl:text>Name: </xsl:text><xsl:value-of select="Name"/>
+
+      <xsl:text>Name: </xsl:text>
+      <xsl:value-of select="Name"/>
       <xsl:text>&#xd;</xsl:text>
       <xsl:text>&#xd;</xsl:text>
-      <xsl:text>Nom de guerre: </xsl:text><xsl:value-of select="NDG"/>
+      <xsl:text>Nom de guerre: </xsl:text>
+      <xsl:value-of select="NDG"/>
       <xsl:text>&#xd;</xsl:text>
       <xsl:text>&#xd;</xsl:text>
 
@@ -75,24 +157,9 @@
           <xsl:text>&#xd;</xsl:text>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:for-each select="Given">
-            <xsl:value-of select="Title"/><!--Title-->
-            <xsl:if test="Detail != ''" >
-              <xsl:text> with </xsl:text>
-              <xsl:for-each select="Detail/.">
-                <xsl:value-of select="Name"/>
-                <xsl:text> </xsl:text>
-                <xsl:value-of select="Value"/>
-              </xsl:for-each>
-            </xsl:if>
-            <xsl:if test="position() != last()">
-              <xsl:text>&#xd;</xsl:text>
-              <xsl:text>&#xd;</xsl:text>
-              <xsl:text>[and]</xsl:text>
-              <xsl:text>&#xd;</xsl:text>
-              <xsl:text>&#xd;</xsl:text>
-            </xsl:if>
-          </xsl:for-each>				
+
+          <xsl:apply-templates select ="Given"></xsl:apply-templates>
+        
         </xsl:otherwise>
       </xsl:choose>
 
@@ -108,24 +175,9 @@
           <xsl:text>&#xd;</xsl:text>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:for-each select="When">
-            <xsl:value-of select="Title"/><!--Title-->
-            <xsl:if test="Detail != ''" >
-              <xsl:text> with </xsl:text>
-              <xsl:for-each select="Detail/.">
-                <xsl:value-of select="Name"/>
-                <xsl:text> </xsl:text>
-                <xsl:value-of select="Value"/>
-              </xsl:for-each>
-            </xsl:if>
-            <xsl:if test="position() != last()">
-              <xsl:text>&#xd;</xsl:text>
-              <xsl:text>&#xd;</xsl:text>
-              <xsl:text>[and]</xsl:text>
-              <xsl:text>&#xd;</xsl:text>
-              <xsl:text>&#xd;</xsl:text>
-            </xsl:if>
-          </xsl:for-each>				
+
+          <xsl:apply-templates select ="When"></xsl:apply-templates>
+        
         </xsl:otherwise>
       </xsl:choose>
 
@@ -141,68 +193,34 @@
           <xsl:text>&#xd;</xsl:text>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:for-each select="Then">
-            <xsl:value-of select="Title"/><!--Title-->
-            <xsl:text>&#xd;</xsl:text>
-            <xsl:text>&#xd;</xsl:text>
-            <xsl:choose>
-            
-              <xsl:when test="count(Detail/Failure) > 0">
-                  <xsl:for-each select="Detail/Failure/Mismatch">
-                    <xsl:text>```</xsl:text>
-                    <xsl:text>&#xd;</xsl:text>
-                    <xsl:text>&#xd;</xsl:text>
-                    <xsl:value-of select="Name"/>
-                    <xsl:text> Mismatch:</xsl:text>
-                    <xsl:text>&#xd;</xsl:text>
-                    <xsl:text>* Expected: </xsl:text><xsl:value-of select="Expected/Value"/>
-                    <xsl:text>&#xd;</xsl:text>
-                    <xsl:text>* Actual: </xsl:text><xsl:value-of select="Actual/Value"/>
-                    <xsl:text>&#xd;</xsl:text>
-                    <xsl:text>&#xd;</xsl:text>
-                    <!--::FAILURE::-->
-                    <xsl:text>```</xsl:text>
-                    <xsl:text>&#xd;</xsl:text>
-                    <xsl:text>```::FAILURE::```</xsl:text>
-                    <xsl:text>&#xd;</xsl:text>
-                    <xsl:text>&#xd;</xsl:text>
-                  </xsl:for-each >
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:if test="count(Detail/.) > 0" >
-                  <xsl:text> with </xsl:text>
-                  <xsl:for-each select="Detail/.">
-                    <xsl:value-of select="Name"/>
-                    <xsl:text> </xsl:text>
-                    <xsl:value-of select="Value"/>
-                  </xsl:for-each>
-                </xsl:if>
-              </xsl:otherwise>
-            </xsl:choose>
 
-            <xsl:text>&#xd;</xsl:text>
-
-            <xsl:if test="position() != last()">
-              <xsl:text>&#xd;</xsl:text>
-              <xsl:text>&#xd;</xsl:text>
-              <xsl:text>[and]</xsl:text>
-              <xsl:text>&#xd;</xsl:text>
-              <xsl:text>&#xd;</xsl:text>
-            </xsl:if>
-          </xsl:for-each>
+          <xsl:apply-templates select ="Then"></xsl:apply-templates>
+        
         </xsl:otherwise>
       </xsl:choose>
 
-      <xsl:text>&#xd;</xsl:text>
-      <xsl:text>&#xd;</xsl:text>
-      <xsl:text>[Back to top](#top)</xsl:text>
-      <xsl:text>&#xd;</xsl:text>
-      <xsl:text>&#xd;</xsl:text>
-      <xsl:text>&#xd;</xsl:text>
-      
+      <xsl:text>&#xd;&#xd;</xsl:text>
+
+      <xsl:text>##### Nerd Area</xsl:text>
+      <xsl:text>&#xd;&#xd;</xsl:text>
+      <xsl:if test="count(Scope) > 0">
+        <xsl:text>&#xd;&#xd;</xsl:text>
+        <xsl:text>Scenario Scope</xsl:text>
+        <xsl:text>&#xd;&#xd;</xsl:text>
+        <xsl:apply-templates select ="Scope"></xsl:apply-templates>
+      </xsl:if>
+      <xsl:if test="count(Then/Scope) > 0">
+        <xsl:text>&#xd;&#xd;</xsl:text>
+        <xsl:text>Then Scope(s)</xsl:text>
+        <xsl:text>&#xd;&#xd;</xsl:text>
+        <xsl:apply-templates select ="Then/Scope"></xsl:apply-templates>
+      </xsl:if>
+
+
+      <xsl:text>&#xd;&#xd;[Back to top](#top)&#xd;&#xd;</xsl:text>
+
       <xsl:text>---</xsl:text>
-      <xsl:text>&#xd;</xsl:text>
-      <xsl:text>&#xd;</xsl:text>
+      <xsl:text>&#xd;&#xd;</xsl:text>
 
     </xsl:for-each>
 
