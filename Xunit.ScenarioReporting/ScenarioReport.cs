@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit.Abstractions;
 using Xunit.ScenarioReporting.Results;
 using Xunit.Sdk;
 
@@ -10,17 +11,21 @@ namespace Xunit.ScenarioReporting
 {
     sealed class ScenarioReport 
     {
-        public ScenarioReport(string assemblyName, IReportWriter writer)
+        public ScenarioReport(string assemblyName, IReportWriter writer, IMessageSink diagnosticMessageSinkessageSink)
         {
             _writer = writer;
+            _diagnosticMessageSinkessageSink = diagnosticMessageSinkessageSink;
             _queue = new ConcurrentQueue<Func<IReportWriter, Task>>();
             _queue.Enqueue(rw => rw.Write(new StartReport(assemblyName, DateTimeOffset.Now)));
         }
 
         internal Task WriteFinalAsync()
         {
+
             if (_error != null)
+            {
                 return Task.FromException(_error);
+            }
             _final = new TaskCompletionSource<bool>();
             _queue.Enqueue(rw => rw.Write(new EndReport()));
             _queue.Enqueue(_ =>
@@ -49,6 +54,8 @@ namespace Xunit.ScenarioReporting
             }
             catch (Exception e)
             {
+                _diagnosticMessageSinkessageSink.OnMessage(
+                    new DiagnosticMessage($"An error occured while writing report:{Environment.NewLine} {e}"));
                 _error = e;
                 _final?.TrySetException(e);
             }
@@ -61,6 +68,7 @@ namespace Xunit.ScenarioReporting
 
         private readonly ConcurrentQueue<Func<IReportWriter, Task>> _queue;
         private readonly IReportWriter _writer;
+        private readonly IMessageSink _diagnosticMessageSinkessageSink;
         private Exception _error;
         private int _isWriting;
         private TaskCompletionSource<bool> _final;
@@ -81,6 +89,8 @@ namespace Xunit.ScenarioReporting
             }
             catch(Exception ex)
             {
+                _diagnosticMessageSinkessageSink.OnMessage(
+                    new DiagnosticMessage($"An error occured reading scenario result:{Environment.NewLine} {ex}"));
                 _error = ex;
             }
             EnsureWriting();

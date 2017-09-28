@@ -39,7 +39,7 @@ namespace Xunit.ScenarioReporting
                 }
          
                 var configuration = new ReportConfiguration(name, Directory.GetCurrentDirectory(), TestAssembly.Assembly.AssemblyPath, TestAssembly.ConfigFileName);
-                _controller = new OutputController(configuration);
+                _controller = new OutputController(configuration, DiagnosticMessageSink);
                 _scenarioReport = _controller.Report;
             });
         }

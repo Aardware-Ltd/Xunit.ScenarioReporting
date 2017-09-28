@@ -16,7 +16,7 @@ namespace Xunit.ScenarioReporting.Tests
         public async Task UnnamedScenarioFromFactShouldHaveNameSet()
         {
             var output = new VerifiableReportWriter();
-            var report = new ScenarioReport("Test", output);
+            var report = new ScenarioReport("Test", output, new TestMessageSink());
             await Mock.ExecuteTestMethodAsync<FunctionsThatReturnScenarioRunResults>(report, nameof(BasicFactScenario));
             var scenario = Assert.Single(output.Items.OfType<StartScenario>());
             Assert.Contains(nameof(BasicFactScenario), scenario.Name);
@@ -28,7 +28,7 @@ namespace Xunit.ScenarioReporting.Tests
         public async Task UnnamedScenarioFromTheoryShouldHaveNameSet()
         {
             var output = new VerifiableReportWriter();
-            var report = new ScenarioReport("Test", output);
+            var report = new ScenarioReport("Test", output, new TestMessageSink());
             await Mock.ExecuteTestMethodAsync<FunctionsThatReturnScenarioRunResults>(report, nameof(BasicTheoryScenario), parameters: new object[]{12, 30, 42});
             var scenario = Assert.Single(output.Items.OfType<StartScenario>());
             Assert.Contains(nameof(BasicTheoryScenario), scenario.Name);
@@ -39,7 +39,7 @@ namespace Xunit.ScenarioReporting.Tests
         public async Task ReturningResultWithHigherLevelRunnerShouldError()
         {
             var output = new VerifiableReportWriter();
-            var report = new ScenarioReport("Test", output);
+            var report = new ScenarioReport("Test", output, new TestMessageSink());
             var scenarioRunner = new TestScenarioRunner();
             var ex = await Record.ExceptionAsync(() => Mock.ExecuteTestMethodAsync<FunctionsThatReturnScenarioRunResults>(report, nameof(BasicFactScenario), scenarioRunner));
             var result = Assert.IsType<InvalidOperationException>(ex);
@@ -50,7 +50,7 @@ namespace Xunit.ScenarioReporting.Tests
         public async Task WhenScenarioHasTitleTheScopeShouldNotOverrideIt()
         {
             var output = new VerifiableReportWriter();
-            var report = new ScenarioReport("Test", output);
+            var report = new ScenarioReport("Test", output, new TestMessageSink());
             await Mock.ExecuteTestMethodAsync<FunctionsThatReturnScenarioRunResults>(report, nameof(FactScenarioWithTitle));
             var scenario = Assert.Single(output.Items.OfType<StartScenario>());
             Assert.Contains(nameof(FactScenarioWithTitle), scenario.Scope);
