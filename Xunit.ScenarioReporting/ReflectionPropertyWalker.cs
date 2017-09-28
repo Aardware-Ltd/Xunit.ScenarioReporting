@@ -11,14 +11,15 @@ namespace Xunit.ScenarioReporting
     internal class ReflectionReader
     {
         private readonly Dictionary<Type, Func<string, object, ObjectPropertyDefinition>> _customPropertyReaders;
+        
         readonly Func<Type, string, bool> _skipProperty;
-        private Func<Type, bool> _skipType;
+        private readonly Func<Type, bool> _skipType;
 
         public ReflectionReader(
             Dictionary<Type, string> formatStrings,
             Dictionary<Type, Func<object, string>> formatters,
             Dictionary<Type, Func<string, object, ObjectPropertyDefinition>> customPropertyReaders,
-        Func<Type, string, bool> skipProperty,
+            Func<Type, string, bool> skipProperty,
             Func<Type, bool> skipType)
         {
             _skipProperty = skipProperty;
@@ -73,9 +74,25 @@ namespace Xunit.ScenarioReporting
                 }
                 else
                 {
+                    
+                    foreach (var f in current.Type.GetFields(BindingFlags.Public | BindingFlags.Instance).Reverse())
+                    {
+                        if (_skipProperty(current.Type, f.Name) || _skipProperty(f.DeclaringType, f.Name)) continue;
+                        value = f.GetValue(current.Value);
+                        if (pending.Any(x => ReferenceEquals(value, x.Value))) continue;
+                        pending.Push(new ToRead(f.FieldType, f.Name, value, currentProps));
+                        if (pending.Count > 10000)
+                        {
+                            throw new Exception(
+                                $"Type {current.Type} appears to be endlessly recursive or has more properties than can sensibly be compared, please specify a custom property reader or skip the properties for this type")
+                            {
+                                Data = {["PendingStack"] = pending.Select(x => x.Type).ToArray()}
+                            };
+                        }
+                    }
                     foreach (var p in current.Type.GetProperties().Reverse())
                     {
-                        if (_skipProperty(current.Type, p.Name)) continue;
+                        if (_skipProperty(current.Type, p.Name) || _skipProperty(p.DeclaringType, p.Name)) continue;
                         value = p.GetValue(current.Value);
                         if (pending.Any(x => ReferenceEquals(value, x.Value))) continue;
                         pending.Push(new ToRead(p.PropertyType, p.Name, value, currentProps));
