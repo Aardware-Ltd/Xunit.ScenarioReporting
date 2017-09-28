@@ -8,39 +8,53 @@ using System.Reflection;
 using Xunit.ScenarioReporting.Results;
 using static Xunit.ScenarioReporting.Constants;
 using System.Text.RegularExpressions;
+using Xunit.Abstractions;
+using Xunit.Sdk;
+
 namespace Xunit.ScenarioReporting
 {
     class OutputController
     {
         private readonly IReportConfiguration _configuration;
+        private readonly IMessageSink _diagnosticMessageSink;
 
         private readonly XmlWriter _xw;
         private readonly FileStream _fileStream;
         private readonly StreamWriter _sw;
 
-        public OutputController(IReportConfiguration configuration)
+        public OutputController(IReportConfiguration configuration, IMessageSink diagnosticMessageSink)
         {
             _configuration = configuration;
+            _diagnosticMessageSink = diagnosticMessageSink;
+
+            IReportWriter writer;
             if (!configuration.WriteOutput)
             {
-                Report = new ScenarioReport(configuration.AssemblyName, new NullWriter());
+                _diagnosticMessageSink.OnMessage(new DiagnosticMessage("Output is disabled"));
+                writer = new NullWriter();
             }
-            _fileStream = new FileStream(configuration.XmlReportFile, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
+            else
+            {
+                _diagnosticMessageSink.OnMessage(new DiagnosticMessage($"Creating report at {configuration.XmlReportFile}"));
+                _fileStream = new FileStream(configuration.XmlReportFile, FileMode.Create, FileAccess.Write,
+                    FileShare.None, 4096, true);
 
-            _sw = new StreamWriter(_fileStream);
+                _sw = new StreamWriter(_fileStream);
 
-            XmlWriterSettings xws = new XmlWriterSettings();
-            xws.Async = true;
-            _xw = XmlWriter.Create(_sw, xws);
+                XmlWriterSettings xws = new XmlWriterSettings();
+                xws.Async = true;
+                _xw = XmlWriter.Create(_sw, xws);
 
-            var writer = new ReportWriter(_xw);
-            Report = new ScenarioReport(configuration.AssemblyName, writer);
+                writer = new ReportWriter(_xw);
+            }
+            Report = new ScenarioReport(configuration.AssemblyName, writer, _diagnosticMessageSink);
         }
 
         public ScenarioReport Report { get; }
 
         public async Task Complete()
         {
+            _diagnosticMessageSink.OnMessage(new DiagnosticMessage("Completing report"));
             await Report.WriteFinalAsync();
             _xw.Close();
             _xw.Dispose();
@@ -51,11 +65,13 @@ namespace Xunit.ScenarioReporting
 
             if (_configuration.WriteHtml)
             {
+                _diagnosticMessageSink.OnMessage(new DiagnosticMessage($"Writing html to {_configuration.HtmlReportFile}"));
                 await WriteHTML(_configuration.XmlReportFile, _configuration.HtmlReportFile);
             }
 
             if (_configuration.WriteMarkdown)
             {
+                _diagnosticMessageSink.OnMessage(new DiagnosticMessage($"Writing markdown to {_configuration.MarkdownReportFile}"));
                 WriteMarkdown(_configuration.XmlReportFile, _configuration.MarkdownReportFile);
             }
         }
@@ -173,7 +189,6 @@ namespace Xunit.ScenarioReporting
         private async Task StartScenario(XmlWriter writer, ReportItem item)
         {
             var start = (StartScenario)item;
-            //await writer.WriteLineAsync($"{H2} {start.Name}");
             await writer.WriteStartElementAsync(null, XmlTagScenario, null);
 
             await writer.WriteElementStringAsync(null, XmlTagName, null, start.Name);
@@ -197,7 +212,6 @@ namespace Xunit.ScenarioReporting
         private async Task Given(XmlWriter writer, ReportItem item)
         {
             var given = (Given)item;
-            //await writer.WriteLineAsync($"{H4} {given.Title}");
             await writer.WriteStartElementAsync(null, XmlTagGiven, null);
             await WriteDetails(writer, given.Title, given.Details);
             await writer.WriteEndElementAsync();
@@ -206,7 +220,6 @@ namespace Xunit.ScenarioReporting
         private async Task Then(XmlWriter writer, ReportItem item)
         {
             var then = (Then)item;
-            //await writer.WriteLineAsync($"{H4} {then.Title}");
             await writer.WriteStartElementAsync(null, XmlTagThen, null);
             await writer.WriteElementStringAsync(null, XmlTagScope, null, then.Scope);
             await WriteDetails(writer, then.Title, then.Details);
@@ -216,8 +229,6 @@ namespace Xunit.ScenarioReporting
         private async Task When(XmlWriter writer, ReportItem item)
         {
             var when = (When)item;
-            //await writer.WriteLineAsync($"{H4} When ");
-            //await writer.WriteLineAsync($"{H4} {when.Title}");
             await writer.WriteStartElementAsync(null, XmlTagWhen, null);
             await WriteDetails(writer, when.Title, when.Details);
             await writer.WriteEndElementAsync();
@@ -270,7 +281,6 @@ namespace Xunit.ScenarioReporting
                     if (mismatch != null)
                     {
                         await WriteFailureMismatch(writer, mismatch.Name, mismatch.Formatter(mismatch.Value), mismatch.Formatter(mismatch.Actual));
-
                     }
 
                 }
