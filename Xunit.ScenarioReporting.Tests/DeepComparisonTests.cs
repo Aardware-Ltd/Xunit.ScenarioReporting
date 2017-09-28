@@ -256,6 +256,30 @@ namespace Xunit.ScenarioReporting.Tests
             }
         }
 
+        [Fact]
+        public void CanReadObjectWithFields()
+        {
+            var withFields = new ClassWithFields("Private", "Protected", "PublicReadonly", "Public");
+            var read = _reader.Read(withFields);
+            Assert.Equal(2, read.Properties.Count);
+        }
+
+        class ClassWithFields
+        {
+            private readonly string _shouldNotBeRead;
+            protected readonly string AlsoShoulNotBeRead;
+            public readonly string CanBeRead;
+            public string ShouldAlsoBeRead;
+
+            public ClassWithFields(string shouldNotBeRead, string alsoShoulNotBeRead, string alsoShoulNotBeRead1, string shouldAlsoBeRead)
+            {
+                _shouldNotBeRead = shouldNotBeRead;
+                AlsoShoulNotBeRead = alsoShoulNotBeRead;
+                AlsoShoulNotBeRead = alsoShoulNotBeRead1;
+                ShouldAlsoBeRead = shouldAlsoBeRead;
+            }
+        }
+
         class ClassWithProperties
         {
             public ClassWithProperties(string name, int meaningOfEverything, double pi, DateTime runAt)
