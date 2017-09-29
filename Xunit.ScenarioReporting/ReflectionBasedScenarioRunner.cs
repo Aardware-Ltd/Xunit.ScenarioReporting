@@ -310,7 +310,7 @@ namespace Xunit.ScenarioReporting
             }
             if (actual.Count > expected.Count)
             {
-                for (int i = Math.Max(0, expected.Count - 1); i < actual.Count; i++)
+                for (int i = expected.Count; i < actual.Count; i++)
                 {
                     Add(new Then(Scope, "More results than expected", new Detail[] { new Mismatch("Type", null, actual[i], formatter: Formatters.FromClassName) }));
                 }
