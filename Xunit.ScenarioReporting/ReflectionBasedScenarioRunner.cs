@@ -325,11 +325,20 @@ namespace Xunit.ScenarioReporting
             _formatTypeStrings[typeof(T)] = format;
         }
 
+        /// <summary>
+        /// Adds a custom formatter for the specified type
+        /// </summary>
+        /// <typeparam name="T">The type that the formatter will be used for.</typeparam>
+        /// <param name="formatter">The function that will render the type as a string</param>
         protected void AddFormatter<T>(Func<T, string> formatter)
         {
             _formatters.Add(typeof(T), o => formatter((T)o));
         }
-
+        /// <summary>
+        /// Adds a custom property reader for types where reflection is giving an undesired result.
+        /// </summary>
+        /// <typeparam name="T">The type that the reader will be used for</typeparam>
+        /// <param name="reader">The function that will take an instance of the type and turn it into a representation that can be reported and compared.</param>
         protected void AddCustomPropertyReader<T>(Func<T, string, ObjectPropertyDefinition> reader)
         {
             _customPropertyReaders.Add(typeof(T), (s, o) => reader((T)o, s));
