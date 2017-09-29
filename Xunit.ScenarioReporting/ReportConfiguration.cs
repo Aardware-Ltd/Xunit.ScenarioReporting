@@ -41,8 +41,6 @@ namespace Xunit.ScenarioReporting
 
             var configbuilder = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(assemblyPath, "appsettings.json"), true)
-                .AddXmlFile(Path.Combine(assemblyPath, "app.config"), true)
-                .AddXmlFile(Path.Combine(assemblyPath, $"{assemblyFile}.config"), true)
                 .AddEnvironmentVariables();
 
             var configurationRoot = configbuilder.Build();
