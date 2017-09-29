@@ -24,6 +24,13 @@ namespace Xunit.ScenarioReporting
             var builder = ReflectionBasedScenarioRunner<TGiven, TWhen, TThen>.ScenarioDefinition.Builder;
             define(builder);
             scenarioRunner.Definition = builder.Build();
+            if (System.Diagnostics.Debugger.IsAttached)
+            {
+                var result = scenarioRunner.Result().Result;
+                result.ThrowIfErrored();
+                return Task.FromResult(result);
+            }
+
             return scenarioRunner.Result();
         }
 
@@ -44,7 +51,11 @@ namespace Xunit.ScenarioReporting
             var builder = ReflectionBasedScenarioRunner<TGiven, TWhen, TThen>.ScenarioDefinition.Builder;
             define(builder);
             scenarioRunner.Definition = builder.Build();
-            await scenarioRunner.Result();
+            var result = await scenarioRunner.Result();
+            if (System.Diagnostics.Debugger.IsAttached)
+            {
+                result.ThrowIfErrored();
+            }
             return scenarioRunner.State;
         }
     }
