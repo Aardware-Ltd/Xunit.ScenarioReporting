@@ -36,8 +36,11 @@ namespace Xunit.ScenarioReporting
             while (pending.Count > 0)
             {
                 var current = pending.Pop();
-                if (visited.Contains(current.Value)) continue;
-                visited.Add(current.Value);
+                if (!current.Type.IsValueType)
+                {
+                    if (visited.Contains(current.Value)) continue;
+                    visited.Add(current.Value);
+                }
                 var currentProps = new List<ObjectPropertyDefinition>();
 
                 current.Parent.Add(new ObjectPropertyDefinition(current.Type, current.Name, current.Value, null, null,
@@ -137,7 +140,13 @@ namespace Xunit.ScenarioReporting
 
         bool SkipType(Type type)
         {
-            return type.IsPrimitive || type == typeof(DateTime) || type == typeof(string) || type == typeof(DateTimeOffset) || _skipType(type);
+            return 
+                type.IsPrimitive || 
+                type == typeof(DateTime) || 
+                type == typeof(string) || 
+                type == typeof(DateTimeOffset) || 
+                type == typeof(Guid) ||
+                _skipType(type);
         }
 
         struct ToRead
