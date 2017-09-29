@@ -24,8 +24,9 @@ namespace Xunit.ScenarioReporting
                 sb.AppendLine(failure.Title);
                 foreach (var detail in failure.Details.OfType<Mismatch>())
                 {
-                    sb.AppendLine($"  Expected : {detail.Value}");
-                    sb.AppendLine($"  Actual   : {detail.Actual}");
+                    sb.AppendLine($"  {detail.Name}");
+                    sb.AppendLine($"    Expected : {detail.Value}");
+                    sb.AppendLine($"    Actual   : {detail.Actual}");
                 }
             }
             return sb.ToString();
