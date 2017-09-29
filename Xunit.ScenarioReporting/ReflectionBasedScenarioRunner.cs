@@ -35,7 +35,7 @@ namespace Xunit.ScenarioReporting
         /// method which provids a fluent builder for defining the current scenarioRunner.
         /// </summary>
         protected internal ScenarioDefinition Definition { protected get; set; }
-        
+
         /// <summary>
         /// Provides access to the exception that was thrown for additional verification.
         /// </summary>
@@ -59,7 +59,7 @@ namespace Xunit.ScenarioReporting
             {
                 Given = given;
                 When = when;
-                Then = new TThen[]{};
+                Then = new TThen[] { };
                 ExpectedException = expectedException;
                 VerifyExceptionMessage = verifyMessage;
             }
@@ -69,7 +69,7 @@ namespace Xunit.ScenarioReporting
             /// automatically verified as well as the type.
             /// </summary>
             public bool VerifyExceptionMessage { get; set; }
-            
+
             /// <summary>
             /// The expected exception on running the scenario, or null if none is expected.
             /// </summary>
@@ -143,14 +143,22 @@ namespace Xunit.ScenarioReporting
             }, t => _skipTypes.Contains(t));
             _comparer = new ReflectionComparerer(_reader, Comparers);
             RecordSetup();
-            await Given(Definition.Given);
             try
             {
-                await When(Definition.When);
+                await Given(Definition.Given);
+                try
+                {
+                    await When(Definition.When);
+                }
+                catch (Exception ex) when (Definition.VerifyExceptionMessage)
+                {
+                    Thrown = ex;
+                }
             }
-            catch (Exception ex) when (Definition.VerifyExceptionMessage)
+            catch (Exception ex)
             {
-                Thrown = ex;
+                base.AddResult(Scope, "Error running scenario", ex);
+                throw;
             }
             _actuals = await ActualResults();
             Verify(Definition.ExpectedException, Thrown, Definition.VerifyExceptionMessage);
@@ -195,7 +203,7 @@ namespace Xunit.ScenarioReporting
             var details = new List<Detail>();
             foreach (var property in properties)
             {
-                if(property.Properties.Count > 0) 
+                if (property.Properties.Count > 0)
                     details.Add(new Detail(DetailsFromProperties(property.Properties), property.Name));
                 else
                     details.Add(new Detail(property.Name, property.Value, property.Format, property.Formatter));
@@ -285,7 +293,7 @@ namespace Xunit.ScenarioReporting
         private void Verify(IReadOnlyList<TThen> expected, IReadOnlyList<TThen> actual)
         {
             var maxIterations = Math.Min(expected.Count, actual.Count);
-            
+
             for (int i = 0; i < maxIterations; i++)
             {
 
@@ -297,14 +305,14 @@ namespace Xunit.ScenarioReporting
             {
                 for (int i = Math.Max(0, actual.Count - 1); i < expected.Count; i++)
                 {
-                    Add(new Then(Scope, "Missing expected results", new Detail[]{ new Mismatch("Type", expected[i], null, formatter: Formatters.FromClassName)}));
+                    Add(new Then(Scope, "Missing expected results", new Detail[] { new Mismatch("Type", expected[i], null, formatter: Formatters.FromClassName) }));
                 }
             }
             if (actual.Count > expected.Count)
             {
                 for (int i = Math.Max(0, expected.Count - 1); i < actual.Count; i++)
                 {
-                    Add(new Then(Scope, "More results than expected", new Detail[] { new Mismatch("Type", null, actual[i], formatter: Formatters.FromClassName)}));
+                    Add(new Then(Scope, "More results than expected", new Detail[] { new Mismatch("Type", null, actual[i], formatter: Formatters.FromClassName) }));
                 }
             }
         }
@@ -365,7 +373,7 @@ namespace Xunit.ScenarioReporting
         protected override async Task Run()
         {
             await base.Run();
-            if(State == null)
+            if (State == null)
                 State = await AcquireState();
         }
         /// <summary>
