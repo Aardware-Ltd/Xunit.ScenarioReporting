@@ -264,6 +264,27 @@ namespace Xunit.ScenarioReporting.Tests
             Assert.Equal(2, read.Properties.Count);
         }
 
+        [Fact]
+        public void ShouldNotSkipValueTypesWithSameValue()
+        {
+            var read = _reader.Read(new ClassWithTwoGuids(Guid.NewGuid()));
+            Assert.Equal(2, read.Properties.Count);
+        }
+
+        class ClassWithTwoGuids
+        {
+            public readonly Guid Value1;
+
+            public ClassWithTwoGuids(Guid value)
+            {
+                Value1 = value;
+                Value2 = value;
+            }
+
+            public Guid Value2 { get; }
+            
+        }
+
         class ClassWithFields
         {
             private readonly string _shouldNotBeRead;
