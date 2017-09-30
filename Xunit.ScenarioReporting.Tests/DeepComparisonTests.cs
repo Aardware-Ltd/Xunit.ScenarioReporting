@@ -51,7 +51,7 @@ namespace Xunit.ScenarioReporting.Tests
                 complexType, complexType);
             Assert.Equal(2, then.Details.Count);
         }
-
+        
         class SimpleType
         {
             public SimpleType(int number, string text)
@@ -270,6 +270,22 @@ namespace Xunit.ScenarioReporting.Tests
             var read = _reader.Read(new ClassWithTwoGuids(Guid.NewGuid()));
             Assert.Equal(2, read.Properties.Count);
         }
+
+        [Fact]
+        public void ShouldHandleNullFieldsCorrectly()
+        {
+            var value = new CanBeRecursive();
+            var read = _reader.Read(value);
+            Assert.Collection(read.Properties,
+                p =>
+                {
+                    Assert.Equal(typeof(CanBeRecursive), p.Type);
+                    Assert.Equal(nameof(CanBeRecursive.Next), p.Name);
+                    Assert.Null(p.Value);
+                }
+                );
+        }
+
 
         class ClassWithTwoGuids
         {
