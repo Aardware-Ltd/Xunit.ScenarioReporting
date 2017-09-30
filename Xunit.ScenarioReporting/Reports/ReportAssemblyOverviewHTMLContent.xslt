@@ -44,7 +44,9 @@
   <xsl:template match="Detail">
     <p>
       <xsl:text>with </xsl:text>
-      <xsl:value-of select="Name"/>
+      <code>
+        <xsl:value-of select="Name"/>
+      </code>
       <xsl:text> </xsl:text>
       <xsl:value-of select="Value"/>
     </p>
@@ -176,6 +178,17 @@
           font-family: 'Raleway', sans-serif;
           font-size: 16px;
           background-color: #96929F;
+          }
+
+          p>code, li>code, dd>code, td>code {
+              background: #F0F5EC;
+              padding: 0 5px 2px;
+              border-radius: 4px;
+              position: relative;
+              top: -1px;
+              margin: 0 3px 0 1px;
+              overflow-wrap: break-word;
+              word-wrap: break-word;
           }
 
           .report-assembly {
