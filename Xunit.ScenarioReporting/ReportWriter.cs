@@ -352,6 +352,7 @@ namespace Xunit.ScenarioReporting
         private static string Wordify(string str) {
             //TODO: Basic. Revisit.
             str = str.Replace(".", ". ");
+            str = str.Replace("_", " ");
             return ToSentenceCase(str);
         }
 
