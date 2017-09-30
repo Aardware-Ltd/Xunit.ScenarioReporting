@@ -303,17 +303,22 @@ namespace Xunit.ScenarioReporting
             }
             if (expected.Count > actual.Count)
             {
+                List<Detail> missingResults = new List<Detail>();
                 for (int i = Math.Max(0, actual.Count - 1); i < expected.Count; i++)
                 {
-                    Add(new Then(Scope, "Missing expected results", new Detail[] { new Mismatch("Type", expected[i], null, formatter: Formatters.FromClassName) }));
+                    missingResults.Add(new MissingResult("Type", expected[i], formatter: Formatters.FromClassName));
                 }
+                Add(new Then(Scope, "Missing expected results", missingResults));
             }
             if (actual.Count > expected.Count)
             {
+                List<Detail> extraResults = new List<Detail>();
                 for (int i = expected.Count; i < actual.Count; i++)
                 {
-                    Add(new Then(Scope, "More results than expected", new Detail[] { new Mismatch("Type", null, actual[i], formatter: Formatters.FromClassName) }));
+                    extraResults.Add(new ExtraResult("Type", actual[i], formatter: Formatters.FromClassName));
                 }
+
+                Add(new Then(Scope, "More results than expected", extraResults));
             }
         }
         private readonly Dictionary<Type, string> _formatTypeStrings;
