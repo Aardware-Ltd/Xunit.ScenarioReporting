@@ -47,7 +47,7 @@ namespace Xunit.ScenarioReporting
                     currentProps));
                 if (CustomProperties(current.Type, current.Name, current.Value,current.Parent)) continue;
                 if (SkipType(current.Type)) continue;
-
+                if (current.Value is null) continue;
                 if (current.Value is IDictionary)
                 {
                     var entries = new Dictionary<object, object>();
