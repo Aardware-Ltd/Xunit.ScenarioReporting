@@ -83,6 +83,34 @@
     </div> <!--status-failure -->
   </xsl:template>
 
+  <xsl:template match="Exception">
+    <div class="status-failure">
+      <div class="accordion error">
+        <div class="tab">
+          <input id="tab-fail-{generate-id(current())}-{position()}" type="checkbox" name="tabs" />
+          <label for="tab-fail-{generate-id(current())}-{position()}">
+            Failure: <span class="fail-message">
+              <code>
+                <xsl:value-of select="Name"/>
+              </code> Exception
+            </span>
+          </label>
+          <div class="tab-content">
+            <p>
+              <xsl:value-of select="Value"/>
+            </p>
+          </div>
+          <!--tab-content -->
+          <svg class="icon icon-error-x">
+            <use xlink:href="#icon-error-x"></use>
+          </svg>
+        </div>
+        <!--tab -->
+      </div>
+      <!--accordion -->
+    </div>
+    <!--status-failure -->
+  </xsl:template>
 
   <xsl:template match="/">
     <html>
@@ -180,7 +208,7 @@
           background-color: #96929F;
           }
 
-          p>code, li>code, dd>code, td>code {
+          code {
               background: #F0F5EC;
               padding: 0 5px 2px;
               border-radius: 4px;

@@ -242,37 +242,21 @@ namespace Xunit.ScenarioReporting
             {
                 await writer.WriteStartElementAsync(null, XmlTagDetail, null);
                 
-                if (detail is Failure || detail is Mismatch)
+                if (detail is Failure)
                 {
+                    //TODO: Condition not tested
+                    await writer.WriteStartElementAsync(null, XmlTagFailure, null);
 
-                    if (detail is Failure)
-                    {
-                        //TODO: Condition not tested
-                        await writer.WriteStartElementAsync(null, XmlTagFailure, null);
+                    await writer.WriteStartElementAsync(null, XmlTagException, null);
+                    var failure = detail as Failure;
+                    await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
+                    await writer.WriteElementStringAsync(null, XmlTagValue, null, failure.Value.ToString()); // Value should contain stack trace for Exceptions
+                    await writer.WriteEndElementAsync(); // /Exception
 
-                        await writer.WriteStartElementAsync(null, XmlTagException, null);
-                        var failure = detail as Failure;
-                        await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
-                        await writer.WriteElementStringAsync(null, XmlTagValue, null, failure.Value.ToString()); // Value should contain stack trace for Exceptions
-                        await writer.WriteEndElementAsync(); // /Exception
-
-                        await writer.WriteEndElementAsync(); // /Failure
-
-                    }
-
-                    if (detail is Mismatch)
-                    {
-                        //TODO: Nothing may ever need to be written here. Confirm and remove.
-                        
-                        //var mismatch = detail as Scenario.ReportEntry.Mismatch;
-                        //await WriteFailureMismatch(writer, mismatch);
-
-                    }
+                    await writer.WriteEndElementAsync(); // /Failure
 
                 }
-
-
-                if (detail.Formatter != null)
+                else if (detail.Formatter != null)
                 {
                     await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
                     await writer.WriteElementStringAsync(null, XmlTagValue, null, detail.Formatter(detail.Value));
