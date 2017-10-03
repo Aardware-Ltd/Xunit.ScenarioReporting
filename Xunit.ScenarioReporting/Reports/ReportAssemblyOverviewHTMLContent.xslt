@@ -41,6 +41,17 @@
     </div> <!--nested-child-->
   </xsl:template>
 
+  <xsl:template match="Child[1]">
+    <div class="arrow"></div>       
+    <div class="nested-child">
+      <p>
+        <xsl:value-of select="Title"/>
+      </p>
+      <xsl:apply-templates select="Detail"></xsl:apply-templates>
+    </div> <!--nested-child-->
+  </xsl:template>
+  
+  
   <xsl:template match="Detail">
     <p>
       <xsl:text>with </xsl:text>
@@ -202,14 +213,14 @@
           }
 
           code {
-              background: #F0F5EC;
-              padding: 0 5px 2px;
-              border-radius: 4px;
-              position: relative;
-              top: -1px;
-              margin: 0 3px 0 1px;
-              overflow-wrap: break-word;
-              word-wrap: break-word;
+          background: #F0F5EC;
+          padding: 0 5px 2px;
+          border-radius: 4px;
+          position: relative;
+          top: -1px;
+          margin: 0 3px 0 1px;
+          overflow-wrap: break-word;
+          word-wrap: break-word;
           }
 
           .report-assembly {
@@ -276,10 +287,10 @@
           }
 
           .nested-child {
-            position-relative;
-            padding-left:1em;
+          position-relative;
+          padding-left:4em;
           }
-          
+
           .assembly-name,
           .assembly-timestamp {
           font-weight: bold;
@@ -537,6 +548,53 @@
           .accordion.error .fail-message {
           font-weight: normal;
           }
+
+
+          /*#084978;*/
+          .arrow {
+          margin: 1em;
+          position: relative;
+          width: 0;
+          height: 0;
+          border-top: 1em solid transparent;
+          border-right: 1em solid cadetblue;
+          -webkit-transform: rotate(320deg); /*220deg*/
+          -moz-transform: rotate(320deg);
+          -ms-transform: rotate(320deg);
+          -o-transform: rotate(320deg);
+          transform: rotate(320deg);
+          }
+          .arrow:after {
+          content: "";
+          position: absolute;
+          border: 0 solid transparent;
+          border-top: 0.5em solid cadetblue;
+          border-radius: 0 2.5em 0 0;
+          top: -2.5em;
+          left: -0.2em;
+          width: 1.5em;
+          height: 1.5em;
+          -webkit-transform: rotate(225deg); /*45deg*/
+          -moz-transform: rotate(225deg);
+          -ms-transform: rotate(225deg);
+          -o-transform: rotate(225deg);
+          transform: rotate(225deg);
+          }
+
+          /*Customisations to show arrow in first child*/
+          .arrow {
+            float:left;
+            margin-left:1.8em;
+            margin-top:0.6em;
+          }
+          /*First nested child customisations. Note: first-of-type does not work on class so instead adjust all children and then correct all but the first one.*/
+          .nested-child {
+          margin-top: 1.4em;
+          }
+          .nested-child ~ .nested-child {
+          margin-top: initial;
+          }
+
 
         </style>
 
