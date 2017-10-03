@@ -1,10 +1,14 @@
+using System;
+
 namespace Xunit.ScenarioReporting.Results
 {
     internal class Failure : Detail
     {
-        public Failure(string name, string stacktrace) : base(name, stacktrace)
-        {
+        public Type Type { get; }
 
+        public Failure(string name, Type type, string stacktrace) : base(name, stacktrace)
+        {
+            Type = type;
         }
     }
 }

@@ -12,7 +12,7 @@ namespace Xunit.ScenarioReporting.Results
 
         static Detail ExceptionToDetail(Exception ex)
         {
-            return new Failure(ex.Message, ex.StackTrace);
+            return new Failure(ex.Message,ex.GetType(), ex.StackTrace);
         }
     }
 }
