@@ -244,12 +244,12 @@ namespace Xunit.ScenarioReporting
                 
                 if (detail is Failure)
                 {
-                    //TODO: Condition not tested
                     await writer.WriteStartElementAsync(null, XmlTagFailure, null);
 
                     await writer.WriteStartElementAsync(null, XmlTagException, null);
                     var failure = detail as Failure;
                     await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
+                    await writer.WriteElementStringAsync(null, XmlTagType, null, failure.Type.ToString());
                     await writer.WriteElementStringAsync(null, XmlTagValue, null, failure.Value.ToString()); // Value should contain stack trace for Exceptions
                     await writer.WriteEndElementAsync(); // /Exception
 
