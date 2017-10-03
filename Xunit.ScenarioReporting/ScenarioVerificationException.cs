@@ -30,9 +30,14 @@ namespace Xunit.ScenarioReporting
                 sb.AppendLine($"Type : {failure.Title}");
                 foreach (var detail in failure.Details.OfType<Mismatch>())
                 {
-                    sb.AppendLine($"  Property: {detail.Name}");
-                    sb.AppendLine($"    Expected : {detail.Value}");
-                    sb.AppendLine($"    Actual   : {detail.Actual}");
+                    var indent = "";
+                    if (detail.Name != failure.Title)
+                    {
+                        indent = "  ";
+                        sb.AppendLine($"{indent}Property: {detail.Name}");
+                    }
+                    sb.AppendLine($"{indent}  Expected : {detail.Value}");
+                    sb.AppendLine($"{indent}  Actual   : {detail.Actual}");
                 }
             }
             var missing = failures.Where(x => x.Details.OfType<MissingResult>().Any()).ToArray();
