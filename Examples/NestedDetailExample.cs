@@ -10,10 +10,10 @@ namespace Examples
     public class NestedDetailExample
     {
         [Fact]
-        public Task<ScenarioRunResult> Nested()
+        public async Task Nested()
         {
             var expected = new NestedThen("Party at", DateTimeOffset.Now.AddDays(2), new AdditionalThenDetails("Bring food", new EvenMoreNestedThen(long.MaxValue, SomeStatus.ClosedForHolidays)));
-            return new Runner(expected).Run(def =>
+            await new Runner(expected).Run(def =>
                 def.Given(new NestedGiven("Test Given", 42, new AdditionalGivenDetails("Test nested given", new MoreGivenNesting("Really arbitrary name", SomeStatus.Open))))
                 .When(new NestedWhen("Test When", DateTime.Now, new AdditionalWhenDetails("Additional", new EvenMoreNestedWhen(TimeSpan.FromDays(8), SomeStatus.Understaffed))))
                 .Then(expected));

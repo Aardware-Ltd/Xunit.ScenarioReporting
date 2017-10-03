@@ -22,9 +22,9 @@ namespace Examples
         }
 
         [Fact]
-        public Task<ScenarioRunResult> RunnerCustomFormatStrings()
+        public async Task RunnerCustomFormatStrings()
         {
-            return new ScenarioWithCustomFormatStrings().Run(
+            await new ScenarioWithCustomFormatStrings().Run(
                 def => def.Given().When(new object()).Then(Thens));
         }
 

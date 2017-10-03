@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.ExceptionServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit.ScenarioReporting.Results;
 
@@ -33,52 +34,6 @@ namespace Xunit.ScenarioReporting
             _thens.Add(e != null ? new Assertion(scope, name, e) : new Assertion(scope, name));
         }
         
-        /// <summary>
-        /// Provides an interface for adding details to the Given, When and then items
-        /// </summary>
-        protected internal interface IAddDetail
-        {
-            /// <summary>
-            /// Adds a detail to a report item
-            /// </summary>
-            /// <param name="name">The name of the detail</param>
-            /// <param name="value">The value of the detail</param>
-            /// <param name="format">The format of the detail, or null if no format is required</param>
-            /// <param name="formatter"></param>
-            /// <returns></returns>
-            /// <exception cref="ArgumentException">Thrown if both <paramref name="format"/> and <paramref name="formatter"/> are supplied</exception>
-            IAddDetail Add(string name, object value, string format = null, Func<object, string> formatter = null);
-        }
-
-        /// <summary>
-        /// Provides an interface for adding details to the Given, When and then items
-        /// </summary>
-        protected internal interface IAddThenDetail
-        {
-            /// <summary>
-            /// Adds a mismatch to a report item
-            /// </summary>
-            /// <param name="name">The name of the detail</param>
-            /// <param name="expected">The expected value </param>
-            /// <param name="actual">The actual value</param>
-            /// <param name="format">The format of the detail, or null if no format is required</param>
-            /// <param name="formatter"></param>
-            /// <returns></returns>
-            /// <exception cref="ArgumentException">Thrown if both <paramref name="format"/> and <paramref name="formatter"/> are supplied</exception>
-            IAddThenDetail Mismatch(string name, object expected, object actual, string format = null, Func<object, string> formatter = null);
-            /// <summary>
-            /// Adds a match to a report item
-            /// </summary>
-            /// <param name="name">The name of the detail</param>
-            /// <param name="expected">The expected value </param>
-            /// <param name="format">The format of the detail, or null if no format is required</param>
-            /// <param name="formatter"></param>
-            /// <returns></returns>
-            /// <exception cref="ArgumentException">Thrown if both <paramref name="format"/> and <paramref name="formatter"/> are supplied</exception>
-            IAddThenDetail Match(string name, object expected, string format = null, Func<object, string> formatter = null);
-
-        }
-
         internal void Add(Given given)
         {
             _givens.Add(given);
@@ -93,54 +48,8 @@ namespace Xunit.ScenarioReporting
         {
             _thens.Add(then);
         }
-        private static List<Detail> BuildDetails(Action<IAddDetail> detailBuilder)
-        {
-            var builder = new DetailAccumulator();
-            detailBuilder(builder);
-            return builder.Details;
-        }
-
-        private static List<Detail> BuildDetails(Action<IAddThenDetail> detailBuilder)
-        {
-            var builder = new DetailAccumulator();
-            detailBuilder(builder);
-            return builder.Details;
-        }
-
-        class DetailAccumulator : IAddDetail, IAddThenDetail
-        {
-            public List<Detail> Details { get; }
-
-            public DetailAccumulator()
-            {
-                Details = new List<Detail>();
-            }
-
-            public IAddDetail Add(string name, object value, string format, Func<object, string> formatter)
-            {
-                if(format != null && formatter != null) throw new ArgumentException("Cannot specify both format and formatter");
-                var subDetails = new DetailAccumulator();
-                Details.Add(new Detail(name, value, format, formatter));
-                
-                return subDetails;
-            }
-
-            public IAddThenDetail Mismatch(string name, object expected, object actual, string format = null, Func<object, string> formatter = null)
-            {
-                if (format != null && formatter != null) throw new ArgumentException("Cannot specify both format and formatter");
-                Details.Add(new Mismatch(name,expected, actual, format, formatter));
-                return this;
-            }
-
-            public IAddThenDetail Match(string name, object expected, string format = null, Func<object, string> formatter = null)
-            {
-                if (format != null && formatter != null) throw new ArgumentException("Cannot specify both format and formatter");
-                Details.Add(new Match(name, expected, format, formatter));
-                return this;
-            }
-        }
         
-        internal async Task<ScenarioRunResult> Result()
+        internal async Task Execute()
         {
             if (!_runCompleted)
             {
@@ -155,12 +64,21 @@ namespace Xunit.ScenarioReporting
                 }
                 if (_when == null)
                     AddResult(null, "Incomplete scenario", new Exception("No when provided"));
+                _result = new ScenarioRunResult(Title, _givens, _when ?? NullWhen, _thens, _error) { Scope = Scope };
+                _result.ThrowIfErrored();
             }
-            return new ScenarioRunResult(Title, _givens, _when ?? NullWhen, _thens, _error){Scope = Scope};
+        }
+        
+        internal async Task Complete(ScenarioReport report)
+        {
+            await Execute();
+            report.Report(_result);
+            _result.ThrowIfErrored();
         }
         static readonly When NullWhen = new When("No when provided", new Detail[]{});
         private ExceptionDispatchInfo _error;
-        
+        private ScenarioRunResult _result;
+
         /// <summary>
         /// Runs the scenario and performs any verification
         /// </summary>
@@ -177,5 +95,25 @@ namespace Xunit.ScenarioReporting
         /// The scope of the scenario. This is determined by where the scenario runner is created, Test method, Class Fixture or Collection Fixture.
         /// </summary>
         public string Scope { get; internal set; }
+        internal bool DelayReporting { get; set; }
+    }
+
+    class ReportContext
+    {
+        readonly static AsyncLocal<ScenarioReport> Current = new AsyncLocal<ScenarioReport>();
+
+        public static IDisposable Set(ScenarioReport report)
+        {
+            Current.Value = report;
+            return new Disposer();
+        }
+
+        class Disposer : IDisposable {
+            public void Dispose()
+            {
+                Current.Value = null;
+            }
+        }
+        public static ScenarioReport CurrentValue() => Current.Value;
     }
 }

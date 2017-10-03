@@ -10,9 +10,9 @@ namespace Examples
     public class FailingWhen
     {
         [Fact]
-        public Task<ScenarioRunResult> ShouldFail()
+        public async Task ShouldFail()
         {
-            return new TestRunner().Run(def => def.Given().When(new object()).Then());
+            await new TestRunner().Run(def => def.Given().When(new object()).Then());
         }
 
         class TestRunner : ReflectionBasedScenarioRunner<object, object, object>

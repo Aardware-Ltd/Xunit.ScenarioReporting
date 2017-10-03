@@ -10,20 +10,20 @@ using Xunit.ScenarioReporting;
 
 namespace Examples
 {
-    public class ReturnsScenarioFromFact
+    public class RunningScenariosInFacts
     {
         [Fact]
-        public Task<ScenarioRunResult> BasicExample()
+        public async Task  BasicExample()
         {
-           return new ExampleScenarioRunner().Run(def => def.Given(new Number(3), new Number(5)).When(new Operation(OperationType.Add)).Then(new ComputedResult(8))); ;
+           await new ExampleScenarioRunner().Run(def => def.Given(new Number(3), new Number(5)).When(new Operation(OperationType.Add)).Then(new ComputedResult(8))); ;
         }
 
         [Fact]
-        public Task<ScenarioRunResult> AsyncBusExample()
+        public async Task AsyncBusExample()
         {
             var bus = new Bus();
             bus.Subscribe(new SimpleResponder(bus));
-            return new MessageBusScenarioRunner(bus).Run(def => def
+            await new MessageBusScenarioRunner(bus).Run(def => def
                 .Given()
                 .When(new ReverseString("Hello, world!"))
                 .Then(new ReversedString("!dlrow ,olleH")));
@@ -33,9 +33,9 @@ namespace Examples
         [InlineData(1, 2, 3)]
         [InlineData(4, 5, 9)]
         [InlineData(21, 21, 42)]
-        public Task<ScenarioRunResult> TheoryExample(int a, int b, int result)
+        public async Task TheoryExample(int a, int b, int result)
         {
-            return new ExampleScenarioRunner().Run(def =>
+            await new ExampleScenarioRunner().Run(def =>
                 def.Given(new Number(a), new Number(b)).When(new Operation(OperationType.Add)).Then(new ComputedResult(result)));
         }
 
