@@ -51,6 +51,12 @@ namespace Xunit.ScenarioReporting
         
         internal async Task Execute()
         {
+            await ExecuteWithoutThrowing();
+            _result.ThrowIfErrored();
+        }
+
+        private async Task ExecuteWithoutThrowing()
+        {
             if (!_runCompleted)
             {
                 _runCompleted = true;
@@ -64,14 +70,13 @@ namespace Xunit.ScenarioReporting
                 }
                 if (_when == null)
                     AddResult(null, "Incomplete scenario", new Exception("No when provided"));
-                _result = new ScenarioRunResult(Title, _givens, _when ?? NullWhen, _thens, _error) { Scope = Scope };
-                _result.ThrowIfErrored();
+                _result = new ScenarioRunResult(Title, _givens, _when ?? NullWhen, _thens, _error) {Scope = Scope};
             }
         }
-        
+
         internal async Task Complete(ScenarioReport report)
         {
-            await Execute();
+            await ExecuteWithoutThrowing();
             report.Report(_result);
             _result.ThrowIfErrored();
         }
