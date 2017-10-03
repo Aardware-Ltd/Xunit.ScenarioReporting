@@ -42,12 +42,13 @@ namespace Xunit.ScenarioReporting
                     visited.Add(current.Value);
                 }
                 var currentProps = new List<ObjectPropertyDefinition>();
-
-                current.Parent.Add(new ObjectPropertyDefinition(current.Type, current.Name, current.Value, null, null,
+                
+                current.Parent.Add(new ObjectPropertyDefinition(current.Type, current.Name, GetValue(current), null, null,
                     currentProps));
                 if (CustomProperties(current.Type, current.Name, current.Value,current.Parent)) continue;
                 if (SkipType(current.Type)) continue;
                 if (current.Value is null) continue;
+                
                 if (current.Value is IDictionary)
                 {
                     var entries = new Dictionary<object, object>();
@@ -109,6 +110,17 @@ namespace Xunit.ScenarioReporting
             return topLevel[0];
         }
 
+        private static object GetValue(ToRead current)
+        {
+            if (current.Value == null) return null;
+            if (current.Type.IsGenericType && current.Type.IsValueType &&
+                current.Type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                return Convert.ChangeType(current.Value, current.Type.GetGenericArguments()[0]);
+            }
+            return current.Value;
+        }
+
         bool CustomProperties(Type type, string name, object instance, List<ObjectPropertyDefinition> definitions)
         {
             if (_customPropertyReaders.TryGetValue(type, out var reader))
@@ -140,12 +152,15 @@ namespace Xunit.ScenarioReporting
 
         bool SkipType(Type type)
         {
+            
             return 
                 type.IsPrimitive || 
+                type.IsEnum ||
                 type == typeof(DateTime) || 
                 type == typeof(string) || 
                 type == typeof(DateTimeOffset) || 
                 type == typeof(Guid) ||
+                (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)) ||
                 _skipType(type);
         }
 
