@@ -10,6 +10,7 @@ namespace Xunit.ScenarioReporting
         internal const string XmlTagNDG = "NDG";
         internal const string XmlTagScope = "Scope";
         internal const string XmlTagValue = "Value";
+        internal const string XmlTagType = "Type";
         internal const string XmlTagExpected = "Expected";
         internal const string XmlTagActual = "Actual";
         internal const string XmlTagTime = "Time";

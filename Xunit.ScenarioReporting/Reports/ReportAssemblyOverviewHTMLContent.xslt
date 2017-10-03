@@ -89,27 +89,20 @@
         <div class="tab">
           <input id="tab-fail-{generate-id(current())}-{position()}" type="checkbox" name="tabs" />
           <label for="tab-fail-{generate-id(current())}-{position()}">
-            Failure: <span class="fail-message">
-              <code>
-                <xsl:value-of select="Name"/>
-              </code> Exception
+            <xsl:text>Failure: </xsl:text><span class="fail-message">
+              <code><xsl:value-of select="Name"/></code>
+              <xsl:text> </xsl:text><xsl:value-of select="Type"/>
             </span>
           </label>
           <div class="tab-content">
-            <p>
-              <xsl:value-of select="Value"/>
-            </p>
-          </div>
-          <!--tab-content -->
+            <p><xsl:value-of select="Value"/></p>
+          </div> <!--tab-content -->
           <svg class="icon icon-error-x">
             <use xlink:href="#icon-error-x"></use>
           </svg>
-        </div>
-        <!--tab -->
-      </div>
-      <!--accordion -->
-    </div>
-    <!--status-failure -->
+        </div> <!--tab -->
+      </div> <!--accordion -->
+    </div> <!--status-failure -->
   </xsl:template>
 
   <xsl:template match="/">
