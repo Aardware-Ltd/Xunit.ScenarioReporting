@@ -36,13 +36,16 @@ namespace Xunit.ScenarioReporting
             {
                 _scenarioRunner = CollectionFixtureMappings.Values.OfType<ScenarioRunner>().SingleOrDefault();
                 if (_scenarioRunner != null)
+                {
+                    _scenarioRunner.DelayReporting = true;
                     _scenarioRunner.Scope = TestCollection.CollectionDefinition.Name;
+                }
             });
         }
 
         protected override Task<RunSummary> RunTestClassAsync(ITestClass testClass, IReflectionTypeInfo @class, IEnumerable<IXunitTestCase> testCases)
         {
-            return new ScenarioXunitTestClassRunner(_report, testClass, @class, testCases, _diagnosticMessageSink, MessageBus, TestCaseOrderer, new ExceptionAggregator(Aggregator), CancellationTokenSource, CollectionFixtureMappings).RunAsync();
+            return new ScenarioReportingXunitTestClassRunner(_report, testClass, @class, testCases, _diagnosticMessageSink, MessageBus, TestCaseOrderer, new ExceptionAggregator(Aggregator), CancellationTokenSource, CollectionFixtureMappings).RunAsync();
         }
 
         protected override async Task BeforeTestCollectionFinishedAsync()
@@ -50,11 +53,9 @@ namespace Xunit.ScenarioReporting
             
             if (_scenarioRunner != null)
             {
-                var result = await _scenarioRunner.Result();
-                _report.Report(result);
                 try
                 {
-                    result.ThrowIfErrored();
+                    await _scenarioRunner.Complete(_report);
                 }
                 catch (Exception ex)
                 {

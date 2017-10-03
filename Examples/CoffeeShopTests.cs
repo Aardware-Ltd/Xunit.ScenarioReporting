@@ -9,26 +9,26 @@ namespace Examples
     public class CoffeeShopTests
     {
         [Fact]
-        public Task<ScenarioRunResult> WhenOrderingFlatWhiteWithWrongExpectedOrder()
+        public async Task WhenOrderingFlatWhiteWithWrongExpectedOrder()
         {
-            return new CoffeeShopScenarioRunner().Run(def => def
+            await new CoffeeShopScenarioRunner().Run(def => def
                 .Given(new CoffeeReceived(Guid.NewGuid(), 10), new MilkReceived(Guid.NewGuid(), 10))
                 .When(new MakeFlatWhite(Guid.NewGuid()))
                 .Then(new CoffeeUsed(Guid.NewGuid(), 2), new MilkUsed(Guid.NewGuid(), 4)));
         }
 
         [Fact]
-        public Task<ScenarioRunResult> WhenOrderingFlatWhite()
+        public async Task WhenOrderingFlatWhite()
         {
-            return new CoffeeShopScenarioRunner().Run(def => def
+            await new CoffeeShopScenarioRunner().Run(def => def
                 .Given(new CoffeeReceived(Guid.NewGuid(), 10), new MilkReceived(Guid.NewGuid(), 10))
                 .When(new MakeFlatWhite(Guid.NewGuid()))
                 .Then(new MilkUsed(Guid.NewGuid(), 4), new CoffeeUsed(Guid.NewGuid(), 2)));
         }
         [Fact]
-        public Task<ScenarioRunResult> WhenOrderingFlatWhitePartialMatch()
+        public async Task WhenOrderingFlatWhitePartialMatch()
         {
-            return new CoffeeShopScenarioRunner().Run(def => def
+            await new CoffeeShopScenarioRunner().Run(def => def
                 .Given(new CoffeeReceived(Guid.NewGuid(), 10), new MilkReceived(Guid.NewGuid(), 10))
                 .When(new MakeFlatWhite(Guid.NewGuid()))
                 .Then(new MilkUsed(Guid.NewGuid(), 4), new CoffeeUsed(Guid.NewGuid(), 3)));
@@ -38,14 +38,14 @@ namespace Examples
         [InlineData(10, 3, "Not enough milk")]
         [InlineData(0, 10, "Not enough coffee")]
         [InlineData(1, 10, "Not enough coffee")]
-        public Task<ScenarioRunResult> WhenOrderingFlatWhiteWithInsufficinentResources(int coffee, int milk, string message)
+        public async Task WhenOrderingFlatWhiteWithInsufficinentResources(int coffee, int milk, string message)
         {
             List<Event> givens = new List<Event>();
             if(coffee > 0)
                 givens.Add(new CoffeeReceived(Guid.NewGuid(),coffee));
             if(milk > 0)
                 givens.Add(new MilkReceived(Guid.NewGuid(),milk));
-            return new CoffeeShopScenarioRunner().Run(def => def
+            await new CoffeeShopScenarioRunner().Run(def => def
                 .Given(givens.ToArray())
                 .When(new MakeFlatWhite(Guid.NewGuid()))
                 .Throws(new Exception(message)), $"Ordering flat white with {(milk > 0 ? milk.ToString() : "no") } milk and {(coffee > 0 ? coffee.ToString() :"no")} coffee");

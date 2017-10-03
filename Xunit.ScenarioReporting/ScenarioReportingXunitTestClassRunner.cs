@@ -9,12 +9,12 @@ using Xunit.Sdk;
 
 namespace Xunit.ScenarioReporting
 {
-    class ScenarioXunitTestClassRunner : XunitTestClassRunner
+    class ScenarioReportingXunitTestClassRunner : XunitTestClassRunner
     {
         private readonly ScenarioReport _report;
         private ScenarioRunner _scenarioRunner;
 
-        public ScenarioXunitTestClassRunner(
+        public ScenarioReportingXunitTestClassRunner(
                                           ScenarioReport report,
                                           ITestClass testClass,
                                           IReflectionTypeInfo @class,
@@ -29,7 +29,7 @@ namespace Xunit.ScenarioReporting
         {
             _report = report;
         }
-        
+
         protected override Task<RunSummary> RunTestMethodAsync(ITestMethod testMethod, IReflectionMethodInfo method, IEnumerable<IXunitTestCase> testCases,
             object[] constructorArguments)
         {
@@ -42,8 +42,11 @@ namespace Xunit.ScenarioReporting
             Aggregator.Run(() =>
             {
                 _scenarioRunner = ClassFixtureMappings.Values.OfType<ScenarioRunner>().SingleOrDefault();
-                if(_scenarioRunner != null)
+                if (_scenarioRunner != null)
+                {
+                    _scenarioRunner.DelayReporting = true;
                     _scenarioRunner.Scope = Class.Name;
+                }
             });
         }
 
@@ -51,16 +54,7 @@ namespace Xunit.ScenarioReporting
         {
             if (_scenarioRunner != null)
             {
-                var result = await _scenarioRunner.Result();
-                _report.Report(result);
-                try
-                {
-                    result.ThrowIfErrored();
-                }
-                catch (Exception ex)
-                {
-                    Aggregator.Add(ex);
-                }
+                await Aggregator.RunAsync(() => _scenarioRunner.Complete(_report));
             }
             await base.BeforeTestClassFinishedAsync();
         }

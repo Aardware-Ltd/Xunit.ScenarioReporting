@@ -36,17 +36,6 @@ namespace Xunit.ScenarioReporting.Tests
         }
 
         [Fact]
-        public async Task ReturningResultWithHigherLevelRunnerShouldError()
-        {
-            var output = new VerifiableReportWriter();
-            var report = new ScenarioReport("Test", output, new TestMessageSink());
-            var scenarioRunner = new TestScenarioRunner();
-            var ex = await Record.ExceptionAsync(() => Mock.ExecuteTestMethodAsync<FunctionsThatReturnScenarioRunResults>(report, nameof(BasicFactScenario), scenarioRunner));
-            var result = Assert.IsType<InvalidOperationException>(ex);
-            Assert.Contains(Constants.Errors.DontReturnScenarioResults, result.Message);
-        }
-
-        [Fact]
         public async Task WhenScenarioHasTitleTheScopeShouldNotOverrideIt()
         {
             var output = new VerifiableReportWriter();
@@ -57,20 +46,20 @@ namespace Xunit.ScenarioReporting.Tests
             Assert.Equal("Custom Title", scenario.Name);
 
         }
-        public Task<ScenarioRunResult> BasicFactScenario()
+        public Task BasicFactScenario()
         {
             return new TestScenarioRunner()
                 .Run(def => def.Given(new TestGiven()).When(new TestWhen()).Then(new TestThen()));
 
         }
 
-        public Task<ScenarioRunResult> BasicTheoryScenario(int a, int b, int result)
+        public Task BasicTheoryScenario(int a, int b, int result)
         {
             return new TestScenarioRunner()
                 .Run(def => def.Given(new TestGiven()).When(new TestWhen()).Then(new TestThen()));
         }
 
-        public Task<ScenarioRunResult> FactScenarioWithTitle()
+        public Task FactScenarioWithTitle()
         {
             return new TestScenarioRunner()
                 .Run(def => def.Given(new TestGiven()).When(new TestWhen()).Then(new TestThen()), "Custom Title");

@@ -1,8 +1,29 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Xunit.ScenarioReporting
 {
+    class ScenarioScope
+    {
+        readonly static AsyncLocal<string> Current = new AsyncLocal<string>();
+
+        public static IDisposable Push(string value)
+        {
+            Current.Value = value;
+            return new Disposer();
+        }
+
+        public static string CurrentValue() => Current.Value;
+
+        class Disposer : IDisposable
+        {
+            public void Dispose()
+            {
+                Current.Value = null;
+            }
+        }
+    }
     /// <summary>
     /// Provides a definition extension to classes deriving from <see cref="ReflectionBasedScenarioRunner{TGiven,TWhen,TThen}"/>.
     /// </summary>
@@ -18,20 +39,22 @@ namespace Xunit.ScenarioReporting
         /// <param name="define">A method that takes the builder and calls methods on it to build the scenarioRunner.</param>
         /// <param name="title">An optional title for the scenario. If not specified the name will be taken from the scope of the scenario (Test method, Class Fixture, Collection Fixture)</param>
         /// <returns></returns>
-        public static Task<ScenarioRunResult> Run<TGiven, TWhen, TThen>(this ReflectionBasedScenarioRunner<TGiven, TWhen, TThen> scenarioRunner, Action<IDefine<TGiven, TWhen, TThen>> define, string title = null)
+        public static async Task Run<TGiven, TWhen, TThen>(this ReflectionBasedScenarioRunner<TGiven, TWhen, TThen> scenarioRunner, Action<IDefine<TGiven, TWhen, TThen>> define, string title = null)
+        {
+            BuildScenario(scenarioRunner, define, title);
+            if (scenarioRunner.DelayReporting)
+                await scenarioRunner.Execute();
+            else await scenarioRunner.Complete(ReportContext.CurrentValue());
+        }
+
+        private static void BuildScenario<TGiven, TWhen, TThen>(ReflectionBasedScenarioRunner<TGiven, TWhen, TThen> scenarioRunner, Action<IDefine<TGiven, TWhen, TThen>> define,
+            string title)
         {
             if (scenarioRunner.Title == null) scenarioRunner.Title = title;
+            scenarioRunner.Scope = scenarioRunner.Scope ?? ScenarioScope.CurrentValue();
             var builder = ReflectionBasedScenarioRunner<TGiven, TWhen, TThen>.ScenarioDefinition.Builder;
             define(builder);
             scenarioRunner.Definition = builder.Build();
-            if (System.Diagnostics.Debugger.IsAttached)
-            {
-                var result = scenarioRunner.Result().Result;
-                result.ThrowIfErrored();
-                return Task.FromResult(result);
-            }
-
-            return scenarioRunner.Result();
         }
 
         /// <summary>
@@ -44,18 +67,16 @@ namespace Xunit.ScenarioReporting
         /// <param name="scenarioRunner">The scenarioRunner for which to build the definition</param>
         /// <param name="define">A method that takes the builder and calls methods on it to build the scenarioRunner.</param>
         /// <returns></returns>
-        public static async Task<TState> Run<TGiven, TWhen, TThen, TState>(this ReflectionBasedScenarioRunner<TGiven, TWhen, TThen, TState> scenarioRunner, Action<IDefine<TGiven, TWhen, TThen>> define) where TState : class
+        public static async Task<TState> Run<TGiven, TWhen, TThen, TState>(this ReflectionBasedScenarioRunner<TGiven, TWhen, TThen, TState> scenarioRunner, Action<IDefine<TGiven, TWhen, TThen>> define, string title = null) where TState : class
         {
+            if (!scenarioRunner.DelayReporting)
+                throw new InvalidOperationException(
+                    "Task runners with state should only be used in class or collection fixtures");
             if (scenarioRunner.State != null)
                 return scenarioRunner.State;
-            var builder = ReflectionBasedScenarioRunner<TGiven, TWhen, TThen>.ScenarioDefinition.Builder;
-            define(builder);
-            scenarioRunner.Definition = builder.Build();
-            var result = await scenarioRunner.Result();
-            if (System.Diagnostics.Debugger.IsAttached)
-            {
-                result.ThrowIfErrored();
-            }
+            BuildScenario(scenarioRunner, define, title);
+            if (scenarioRunner.DelayReporting)
+                await scenarioRunner.Execute();
             return scenarioRunner.State;
         }
     }

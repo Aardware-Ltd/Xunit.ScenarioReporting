@@ -33,7 +33,11 @@ namespace Xunit.ScenarioReporting
             var testMethodName = ((ScenarioReportingXunitTestCase)TestCase).TestMethodName;
             try
             {
-                result = base.CallTestMethod(testClassInstance);
+                using (ScenarioScope.Push(TestCase.DisplayName))
+                using(ReportContext.Set(_report))
+                {
+                    result = base.CallTestMethod(testClassInstance);
+                }
                 //TODO: the base class has support for f# types async results, do we need to unwrap this?
                 if (result is Task && result.GetType().IsConstructedGenericType)
                 {
