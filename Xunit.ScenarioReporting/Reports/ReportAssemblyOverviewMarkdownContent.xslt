@@ -53,6 +53,18 @@
     <xsl:text>&#xd;&#xd;```::FAILURE::```&#xd;&#xd;</xsl:text>
   </xsl:template>
 
+  <xsl:template match="Exception">
+    <xsl:text>&#xd;&#xd;</xsl:text>
+    <xsl:text>```&#xd;&#xd;</xsl:text>
+    <xsl:value-of select="Name"/><xsl:text> </xsl:text><xsl:value-of select="Type"/><xsl:text>:</xsl:text>
+    <xsl:text>&#xd;&#xd;</xsl:text>
+    <xsl:value-of select="Value"/>
+    <xsl:text>&#xd;</xsl:text>
+    <xsl:text>&#xd;```</xsl:text>
+    <xsl:text>&#xd;&#xd;```::FAILURE::```&#xd;&#xd;</xsl:text>
+  </xsl:template>
+
+
   <xsl:template match="Scope">
     <xsl:text>* </xsl:text>
     <xsl:value-of select="."/>
