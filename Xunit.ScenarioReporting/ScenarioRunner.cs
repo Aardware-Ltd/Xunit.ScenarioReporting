@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.ExceptionServices;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit.ScenarioReporting.Results;
 
@@ -95,30 +94,11 @@ namespace Xunit.ScenarioReporting
         /// so if the scenario is used in a collectionfixture, the name of the collection fixture, if used in a class fixture, then
         /// the name of the class fixture. if returned from a test, then the name of the test will be used.
         /// </summary>
-        public string Title { get; set; }
+        protected internal string Title { get; set; }
         /// <summary>
         /// The scope of the scenario. This is determined by where the scenario runner is created, Test method, Class Fixture or Collection Fixture.
         /// </summary>
-        public string Scope { get; internal set; }
+        protected internal string Scope { get; internal set; }
         internal bool DelayReporting { get; set; }
-    }
-
-    class ReportContext
-    {
-        readonly static AsyncLocal<ScenarioReport> Current = new AsyncLocal<ScenarioReport>();
-
-        public static IDisposable Set(ScenarioReport report)
-        {
-            Current.Value = report;
-            return new Disposer();
-        }
-
-        class Disposer : IDisposable {
-            public void Dispose()
-            {
-                Current.Value = null;
-            }
-        }
-        public static ScenarioReport CurrentValue() => Current.Value;
     }
 }

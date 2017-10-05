@@ -42,10 +42,10 @@ namespace Xunit.ScenarioReporting
                     visited.Add(current.Value);
                 }
                 var currentProps = new List<ObjectPropertyDefinition>();
-                
+                if (CustomProperties(current.Type, current.Name, current.Value, current.Parent)) continue;
                 current.Parent.Add(new ObjectPropertyDefinition(current.Type, current.Name, GetValue(current), null, null,
                     currentProps));
-                if (CustomProperties(current.Type, current.Name, current.Value,current.Parent)) continue;
+                
                 if (SkipType(current.Type)) continue;
                 if (current.Value is null) continue;
                 
@@ -123,11 +123,15 @@ namespace Xunit.ScenarioReporting
 
         bool CustomProperties(Type type, string name, object instance, List<ObjectPropertyDefinition> definitions)
         {
-            if (_customPropertyReaders.TryGetValue(type, out var reader))
+            while (type != null && type != typeof(object))
             {
-                var def = reader(name, instance);
-                definitions.Add(def);
-                return true;
+                if (_customPropertyReaders.TryGetValue(type, out var reader))
+                {
+                    var def = reader(name, instance);
+                    definitions.Add(def);
+                    return true;
+                }
+                type = type.BaseType;
             }
             return false;
         }
