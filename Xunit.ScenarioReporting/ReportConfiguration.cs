@@ -33,7 +33,6 @@ namespace Xunit.ScenarioReporting
                 WriteOutput = false;
                 return;
             }
-            WriteOutput = true;
             if (!Path.IsPathRooted(assemblyFullPath))
                 assemblyFullPath = Path.Combine(currentDirectory, assemblyFullPath);
             string assemblyPath = Path.GetDirectoryName(assemblyFullPath);
@@ -45,6 +44,13 @@ namespace Xunit.ScenarioReporting
 
             var configurationRoot = configbuilder.Build();
             _config = configurationRoot.GetSection("appSettings");
+
+            if (!RunUnderNcrunch(false) && Environment.GetEnvironmentVariable("NCrunch") == "1")
+            {
+                WriteOutput = false;
+                return;
+            }
+            WriteOutput = true;
 
             XmlReportFile = GetTargetXmlReportFile(@default: DefaultFilePath(assemblyPath, assemblyFile, FileExtensionXml));
             
@@ -72,33 +78,30 @@ namespace Xunit.ScenarioReporting
 
         public bool GetGenerateHtmlReport(bool @default)
         {
-            bool dataParsed = @default;
-
-            string dataIn = _config["GenerateHtmlReport"];
-
-            if (!string.IsNullOrWhiteSpace(dataIn))
-            {
-                if (!Boolean.TryParse(dataIn, out dataParsed))
-                { 
-                    throw new ArgumentException($"Configuration error. Key: GenerateHtmlReport. True or False expected, actual'{dataIn}'.");
-                }
-            }
-
-            return dataParsed;
-
+            return ReadBool(@default, "GenerateHtmlReport");
         }
 
         public bool GetGenerateMarkdownReport(bool @default)
         {
+            return ReadBool(@default, "GenerateMarkdownReport");
+        }
+
+        public bool RunUnderNcrunch(bool @default)
+        {
+            return ReadBool(@default, nameof(RunUnderNcrunch));
+        }
+
+        private bool ReadBool(bool @default, string name)
+        {
             bool dataParsed = @default;
 
-            string dataIn = _config["GenerateMarkdownReport"];
+            string dataIn = _config[name];
 
             if (!string.IsNullOrWhiteSpace(dataIn))
             {
                 if (!Boolean.TryParse(dataIn, out dataParsed))
                 {
-                    throw new ArgumentException($"Configuration error. Key: GenerateMarkdownReport. True or False expected, '{dataIn}'");
+                    throw new ArgumentException($"Configuration error. Key: {name}. True or False expected, '{dataIn}'");
                 }
             }
 
