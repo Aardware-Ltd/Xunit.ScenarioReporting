@@ -275,7 +275,7 @@ namespace Xunit.ScenarioReporting
                     var mismatch = detail as Mismatch;
                     if (mismatch != null)
                     {
-                        await WriteFailureMismatch(writer, mismatch.Name, mismatch.Value.ToString(), string.Format(detail.Format, mismatch.Actual));
+                        await WriteFailureMismatch(writer, mismatch.Name, string.Format(detail.Format, mismatch.Value), string.Format(detail.Format, mismatch.Actual));
                     }
                 }
                 else
@@ -285,7 +285,7 @@ namespace Xunit.ScenarioReporting
                     var mismatch = detail as Mismatch;
                     if (mismatch != null)
                     {
-                        await WriteFailureMismatch(writer, mismatch.Name, $"{mismatch.Value}", mismatch.Actual.ToString());
+                        await WriteFailureMismatch(writer, mismatch.Name, $"{mismatch.Value}", mismatch.Actual?.ToString());
                     }
                 }
 
