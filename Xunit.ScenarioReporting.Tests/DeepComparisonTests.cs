@@ -13,9 +13,9 @@ namespace Xunit.ScenarioReporting.Tests
 
         public DeepComparisonTests()
         {
-            var reader = new ReflectionReader(new Dictionary<Type, string>(), new Dictionary<Type, Func<object, string>>(), new List<MemberInfo>(), new Dictionary<Type, Func<string, object, ObjectPropertyDefinition>>(), 
+            var reader = new ReflectionReader(new Dictionary<Type, string>(), new Dictionary<Type, Func<object, string>>(), new List<MemberInfo>(), new Dictionary<Type, Func<string, bool, object, ObjectPropertyDefinition>>(), 
                 (_, __) => false, _ => false);
-            _comparer = new ReflectionComparerer(reader, new Dictionary<Type, IEqualityComparer>());
+            _comparer = new ReflectionComparerer(reader, new Dictionary<Type, object>());
         }
 
         [Fact()]

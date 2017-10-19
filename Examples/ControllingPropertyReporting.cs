@@ -16,7 +16,7 @@ namespace Examples
             return new Runner(expected).Run(def => def
                 .Given(new DtoWithHiddenFields(Guid.NewGuid(), "hidden string", new ChildClass("hidden name", "hidden value"), "should be visible"))
                 .When(new DtoWithoutHiddenFields("Should be visible", new ChildClass("Should also be visible", "and this should be visible too")))
-                .Then(new DtoInheritingFromClassWithHiddenFields(Guid.NewGuid(), "should be hidden", new ChildClass("different so should be visible", "also different so should be visible"), "Should be visible"))
+                .Then(new DtoInheritingFromClassWithHiddenFields(Guid.NewGuid(), "Should be hidden", new ChildClass("different so should be visible", "also different so should be visible"), "Should be visible"))
             );
 
         }
@@ -38,12 +38,17 @@ namespace Examples
             public Runner(object then)
             {
                 _then = then;
-                HideByDefault<DtoWithHiddenFields, Guid>(x =>x.Id);
-                HideByDefault<DtoWithHiddenFields, ChildClass>(x =>x.HiddenChild);
-                HideByDefault<DtoWithHiddenFields, string>(x =>x.HiddenString);
-                HideByDefault<WithTechnicalInfo, Guid>(x=>x.Id);
-                HideByDefault<WithTechnicalInfo, ChildClass>(x => x.HiddenChild);
-                HideByDefault<WithTechnicalInfo, string>(x => x.HiddenString);
+                this.Configure(cfg => cfg
+                    .ForType<DtoWithHiddenFields>(t => t
+                        .Hide(x => x.Id)
+                        .Hide(x => x.HiddenChild)
+                        .Hide(x => x.HiddenString)
+                        )
+                    .ForType< WithTechnicalInfo>(t => t
+                        .Hide(x=>x.Id)
+                        .Hide(x=>x.HiddenChild)
+                        .Hide(x=> x.HiddenString)
+                    ));
             }
             protected override Task Given(IReadOnlyList<object> givens)
             {

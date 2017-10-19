@@ -3,7 +3,7 @@ namespace Xunit.ScenarioReporting
     /// <summary>
     /// Provides common formatting for objects
     /// </summary>
-    public static class Formatters
+    public static class CommonFormatters
     {
         /// <summary>
         /// Formats an object as it's type name

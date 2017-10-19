@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -78,6 +80,135 @@ namespace Xunit.ScenarioReporting
             if (scenarioRunner.DelayReporting)
                 await scenarioRunner.Execute();
             return scenarioRunner.State;
+        }
+    }
+
+    public static class ConfigureReflectionBasedScenarioExtensions
+    {
+        public static TRunner Configure<TRunner>(
+            this TRunner runner, 
+            Action<IConfigure> configure) 
+            where TRunner : ReflectionBasedScenarioRunner
+        {
+            var runnerConfiguration = new RunnerConfiguration(runner);
+            configure(runnerConfiguration);
+            return runner;
+        }
+        class RunnerConfiguration : IConfigure {
+            private readonly ReflectionBasedScenarioRunner _runner;
+
+            public RunnerConfiguration(ReflectionBasedScenarioRunner runner)
+            {
+                _runner = runner ?? throw new ArgumentNullException(nameof(runner));
+            }
+
+            public IConfigure IgnoreAll(string propertyName)
+            {
+                _runner.AddWildcardIgnore(propertyName);
+                return this;
+            }
+
+            public IConfigure IgnoreAll<T>()
+            {
+                _runner.SkipTypes.Add(typeof(T));
+                return this;
+            }
+
+            public IConfigure ForType<T>(Action<IConfigureType<T>> configure)
+            {
+                var typeConfigurer = new ConfigureType<T>(_runner);
+                configure(typeConfigurer);
+                return this;
+            }
+
+            public IConfigure Format<T>(string format)
+            {
+                _runner.AddFormat<T>(format);
+                return this;
+            }
+
+            public IConfigure Format<T>(Func<T, string> formatter)
+            {
+                _runner.AddFormat<T>(formatter);
+                return this;
+            }
+
+            public IConfigure Compare<T>(Func<T, T, bool> comparer)
+            {
+                return Compare(new VeryUnsafeComparer<T>(comparer));
+            }
+
+            public IConfigure Compare<T>(IEqualityComparer<T> comparer)
+            {
+                _runner.AddComparer<T>(comparer);
+                return this;
+            }
+
+            public IConfigure CustomReader<T>(Func<T, bool, string, ObjectPropertyDefinition> reader)
+            {
+                _runner.AddCustomPropertyReader<T>(reader);
+                return this;
+            }
+        }
+
+        class VeryUnsafeComparer<T> : IEqualityComparer<T>
+        {
+            private readonly Func<T, T, bool> _predicate;
+
+            public VeryUnsafeComparer(Func<T, T, bool> predicate)
+            {
+                _predicate = predicate;
+            }
+            public bool Equals(T x, T y)
+            {
+                return _predicate(x, y);
+            }
+
+            public int GetHashCode(T obj)
+            {
+                throw new NotImplementedException("This implementation is not safe for scenarios requiring hashcodes");
+            }
+        }
+        class ConfigureType<T> : IConfigureType<T>{
+            private readonly ReflectionBasedScenarioRunner _runner;
+
+            public ConfigureType(ReflectionBasedScenarioRunner runner)
+            {
+                _runner = runner;
+            }
+
+            public IConfigureType<T> Hide<TP>(Expression<Func<T, TP>> toHide)
+            {
+                _runner.HideByDefault(toHide);
+                return this;
+            }
+
+            public IConfigureType<T> Ignore<TP>(Expression<Func<T, TP>> toIgnore)
+            {
+                if (toIgnore.Body is MemberExpression)
+                {
+                    var exp = (MemberExpression)toIgnore.Body;
+                    _runner.Ignore<T>(exp.Member.Name);
+                }
+                return this;
+            }
+        }
+        public interface IConfigure
+        {
+            IConfigure IgnoreAll(string propertyName);
+            IConfigure IgnoreAll<T>();
+            IConfigure ForType<T>(Action<IConfigureType<T>> configure);
+            IConfigure Format<T>(string format);
+            IConfigure Format<T>(Func<T, string> formatter);
+            IConfigure Compare<T>(Func<T, T, bool> comparer);
+            IConfigure Compare<T>(IEqualityComparer<T> comparer);
+            IConfigure CustomReader<T>(Func<T, bool, string, ObjectPropertyDefinition> reader);
+        }
+
+        public interface IConfigureType<T>
+        {
+            IConfigureType<T> Hide<TP>(Expression<Func<T, TP>> toHide);
+            IConfigureType<T> Ignore<TP>(Expression<Func<T, TP>> toIgnore);
         }
     }
 }
