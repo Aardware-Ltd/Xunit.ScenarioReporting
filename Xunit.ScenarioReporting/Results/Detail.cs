@@ -7,23 +7,26 @@ namespace Xunit.ScenarioReporting.Results
     {
         public string Name { get; }
         public object Value { get; }
+        public bool DisplayByDefault { get; }
         public string Format { get; }
         public Func<object, string> Formatter { get; }
         public IReadOnlyList<Detail> Children { get; }
         private static readonly IReadOnlyList<Detail> EmptyChildren = new Detail[] { };
-        public Detail(string name, object value, string format = null, Func<object, string> formatter = null)
+        public Detail(string name, object value, bool displayByDefault, string format = null, Func<object, string> formatter = null)
         {
             Name = name;
             Value = value;
+            DisplayByDefault = displayByDefault;
             Format = format;
             Formatter = formatter;
             Children = EmptyChildren;
         }
 
-        public Detail(IReadOnlyList<Detail> children, string name)
+        public Detail(IReadOnlyList<Detail> children, bool displayByDefault, string name)
         {
             Name = name;
-            Children = children;
+            DisplayByDefault = displayByDefault;
+            Children = children ?? EmptyChildren;
         }
     }
 }

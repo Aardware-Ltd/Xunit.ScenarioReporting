@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit.ScenarioReporting.Results;
 
@@ -136,7 +138,7 @@ namespace Xunit.ScenarioReporting
 
             if (_run) return;
             _run = true;
-            _reader = new ReflectionReader(_formatTypeStrings, _formatters, _customPropertyReaders, (type, property) =>
+            _reader = new ReflectionReader(_formatTypeStrings, _formatters, HiddenByDefault, _customPropertyReaders, (type, property) =>
             {
                 var properties = IgnoredByType(type);
                 return properties.Contains(property);
@@ -179,7 +181,7 @@ namespace Xunit.ScenarioReporting
                 details.Add(new Mismatch("Type", expected.GetType(), actual.GetType(), formatter: Formatters.FromClassName));
             if (verifyExceptionMessage)
                 if (expected.Message == actual.Message)
-                    details.Add(new Match("Message", expected.Message));
+                    details.Add(new Match("Message", expected.Message, true));
                 else
                     details.Add(new Mismatch("Message", expected.Message, actual.Message));
         }
@@ -204,9 +206,9 @@ namespace Xunit.ScenarioReporting
             foreach (var property in properties)
             {
                 if (property.Properties.Count > 0)
-                    details.Add(new Detail(DetailsFromProperties(property.Properties), property.Name));
+                    details.Add(new Detail(DetailsFromProperties(property.Properties),property.DisplayBydefault, property.Name));
                 else
-                    details.Add(new Detail(property.Name, property.Value, property.Format, property.Formatter));
+                    details.Add(new Detail(property.Name, property.Value, property.DisplayBydefault, property.Format, property.Formatter));
             }
             return details;
         }
@@ -241,6 +243,16 @@ namespace Xunit.ScenarioReporting
         /// </remarks>
         protected virtual IReadOnlyList<string> IgnoredProperties => new string[] { };
 
+        private List<MemberInfo> HiddenByDefault { get; } = new List<MemberInfo>();
+
+        protected void HideByDefault<T, P>(Expression<Func<T, P>> toHide)
+        {
+            if (toHide.Body is MemberExpression)
+            {
+                var exp = (MemberExpression) toHide.Body;
+                HiddenByDefault.Add(exp.Member);
+            }   
+        }
         /// <summary>
         /// A custom set of comparers used when verifying the scenarioRunner. Can be used to provide non default comparers.
         /// </summary>

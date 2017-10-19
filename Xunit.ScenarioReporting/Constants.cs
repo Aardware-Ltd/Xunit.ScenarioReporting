@@ -18,12 +18,11 @@ namespace Xunit.ScenarioReporting
         internal const string XmlTagGiven = "Given";
         internal const string XmlTagThen = "Then";
         internal const string XmlTagWhen = "When";
-        internal const string XmlTagChild = "Child";
         internal const string XmlTagDetails = "Details";
         internal const string XmlTagTitle = "Title";
         internal const string XmlTagDetail = "Detail";
-        internal const string XmlTagMessage = "Message";
 
+        internal const string XmlAttributeShowDetail = "show";
         //Error reporting
         internal const string XmlTagFailure = "Failure"; 
         internal const string XmlTagMismatch = "Mismatch";

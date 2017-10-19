@@ -14,14 +14,17 @@ namespace Xunit.ScenarioReporting
         
         readonly Func<Type, string, bool> _skipProperty;
         private readonly Func<Type, bool> _skipType;
+        private readonly IReadOnlyList<MemberInfo> _hiddenByDefault;
 
         public ReflectionReader(
             Dictionary<Type, string> formatStrings,
             Dictionary<Type, Func<object, string>> formatters,
+            IReadOnlyList<MemberInfo> hiddenByDefault, 
             Dictionary<Type, Func<string, object, ObjectPropertyDefinition>> customPropertyReaders,
             Func<Type, string, bool> skipProperty,
             Func<Type, bool> skipType)
         {
+            _hiddenByDefault = hiddenByDefault;
             _skipProperty = skipProperty;
             _skipType = skipType;
             _customPropertyReaders = customPropertyReaders;
@@ -31,7 +34,7 @@ namespace Xunit.ScenarioReporting
             var pending = new Stack<ToRead>();
             List<object> visited = new List<object>();
             var topLevel = new List<ObjectPropertyDefinition>();
-            pending.Push(new ToRead(value.GetType(), TypeName(value.GetType()), value, topLevel));
+            pending.Push(new ToRead(value.GetType(), TypeName(value.GetType()), value, true, topLevel));
 
             while (pending.Count > 0)
             {
@@ -43,8 +46,15 @@ namespace Xunit.ScenarioReporting
                 }
                 var currentProps = new List<ObjectPropertyDefinition>();
                 if (CustomProperties(current.Type, current.Name, current.Value, current.Parent)) continue;
-                current.Parent.Add(new ObjectPropertyDefinition(current.Type, current.Name, GetValue(current), null, null,
-                    currentProps));
+                current.Parent.Add(
+                    new ObjectPropertyDefinition(
+                        current.Type, 
+                        current.Name, 
+                        current.DisplayedByDefault,
+                        GetValue(current), 
+                        null, 
+                        null,
+                        currentProps));
                 
                 if (SkipType(current.Type)) continue;
                 if (current.Value is null) continue;
@@ -63,7 +73,7 @@ namespace Xunit.ScenarioReporting
 
                     foreach (var entry in entries.Reverse())
                     {
-                        pending.Push(new ToRead(entry.Value?.GetType(), Format(entry.Key), entry.Value, currentProps));
+                        pending.Push(new ToRead(entry.Value?.GetType(), Format(entry.Key), entry.Value, current.DisplayedByDefault, currentProps));
                     }
                 }
                 else if (current.Value is IEnumerable)
@@ -73,7 +83,7 @@ namespace Xunit.ScenarioReporting
                     int index = objects.Length - 1;
                     foreach (var v in objects)
                     {
-                        pending.Push(new ToRead(v.GetType(), $"[{index--}]", v, currentProps));
+                        pending.Push(new ToRead(v.GetType(), $"[{index--}]", v, current.DisplayedByDefault, currentProps));
                     }
                 }
                 else
@@ -84,7 +94,7 @@ namespace Xunit.ScenarioReporting
                         if (_skipProperty(current.Type, f.Name) || _skipProperty(f.DeclaringType, f.Name)) continue;
                         value = f.GetValue(current.Value);
                         if (pending.Any(x => ReferenceEquals(value, x.Value))) continue;
-                        pending.Push(new ToRead(f.FieldType, f.Name, value, currentProps));
+                        pending.Push(new ToRead(f.FieldType, f.Name, value, DisplayByDefault(f), currentProps));
                         if (pending.Count > 10000)
                         {
                             throw new Exception(
@@ -99,7 +109,7 @@ namespace Xunit.ScenarioReporting
                         if (_skipProperty(current.Type, p.Name) || _skipProperty(p.DeclaringType, p.Name)) continue;
                         value = p.GetValue(current.Value);
                         if (pending.Any(x => ReferenceEquals(value, x.Value))) continue;
-                        pending.Push(new ToRead(p.PropertyType, p.Name, value, currentProps));
+                        pending.Push(new ToRead(p.PropertyType, p.Name, value, DisplayByDefault(p), currentProps));
                         if (pending.Count > 10000)
                         {
                             throw new Exception($"Type {current.Type} appears to be endlessly recursive or has more properties than can sensibly be compared, please specify a custom property reader or skip the properties for this type") { Data = { ["PendingStack"] = pending.Select(x => x.Type).ToArray() } };
@@ -108,6 +118,11 @@ namespace Xunit.ScenarioReporting
                 }
             }
             return topLevel[0];
+        }
+
+        private bool DisplayByDefault(MemberInfo memberInfo)
+        {
+            return !_hiddenByDefault.Any(x=> x.DeclaringType == memberInfo.DeclaringType && x.Name == memberInfo.Name);
         }
 
         private static object GetValue(ToRead current)
@@ -173,13 +188,15 @@ namespace Xunit.ScenarioReporting
             public Type Type { get; }
             public string Name { get; }
             public object Value { get; }
+            public bool DisplayedByDefault { get; }
             public List<ObjectPropertyDefinition> Parent { get; }
 
-            public ToRead(Type type, string name, object value, List<ObjectPropertyDefinition> parent)
+            public ToRead(Type type, string name, object value, bool displayedByDefault, List<ObjectPropertyDefinition> parent)
             {
                 Type = type;
                 Name = name;
                 Value = value;
+                DisplayedByDefault = displayedByDefault;
                 Parent = parent;
             }
         }
@@ -187,10 +204,11 @@ namespace Xunit.ScenarioReporting
 
     public class ObjectPropertyDefinition
     {
-        public ObjectPropertyDefinition(Type type, string name, object value, string format, Func<object, string> formatter, IReadOnlyList<ObjectPropertyDefinition> properties)
+        public ObjectPropertyDefinition(Type type, string name, bool displayBydefault, object value, string format, Func<object, string> formatter, IReadOnlyList<ObjectPropertyDefinition> properties)
         {
             Type = type;
             Name = name;
+            DisplayBydefault = displayBydefault;
             Value = value;
             Format = format;
             Formatter = formatter;
@@ -199,6 +217,7 @@ namespace Xunit.ScenarioReporting
 
         public Type Type { get; }
         public string Name { get; }
+        public bool DisplayBydefault { get; }
         public object Value { get; }
         public string Format { get; }
         public Func<object, string> Formatter { get; }
@@ -270,14 +289,14 @@ namespace Xunit.ScenarioReporting
                         pendingExpected.Push(new ExpectedReadResult(currentDetails, expected.Properties[i]));
                         pendingActual.Push(actual.Properties[i]);
                     }
-                    parent.Add(new Match(currentDetails, expected.Name));
+                    parent.Add(new Match(currentDetails, expected.DisplayBydefault, expected.Name));
                 }
                 else
                 {
                     if (!_comparers.TryGetValue(expected.Type, out var comparer))
                         comparer = DefaultComparerFor(expected.Type);
                     if (comparer.Equals(expected.Value, actual.Value))
-                        parent.Add(new Match(expected.Name, expected.Value, expected.Format, expected.Formatter));
+                        parent.Add(new Match(expected.Name, expected.Value, expected.DisplayBydefault, expected.Format, expected.Formatter));
                     else
                         parent.Add(new Mismatch(expected.Name, expected.Value, actual.Value, expected.Format,
                             expected.Formatter));

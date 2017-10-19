@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Reflection;
 
 namespace Xunit.ScenarioReporting.Tests
 {
@@ -10,7 +11,7 @@ namespace Xunit.ScenarioReporting.Tests
 
         public DeepReadTests()
         {
-            _reader = new ReflectionReader(new Dictionary<Type, string>(),new Dictionary<Type, Func<object, string>>(), new Dictionary<Type, Func<string, object, ObjectPropertyDefinition>>(), (_, __) => false, _=>false);
+            _reader = new ReflectionReader(new Dictionary<Type, string>(),new Dictionary<Type, Func<object, string>>(), new List<MemberInfo>(), new Dictionary<Type, Func<string, object, ObjectPropertyDefinition>>(), (_, __) => false, _=>false);
         }
         class TestData
         {

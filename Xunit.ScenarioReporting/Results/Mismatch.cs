@@ -6,7 +6,7 @@ namespace Xunit.ScenarioReporting.Results
     {
         public object Actual { get; }
 
-        public Mismatch(string name, object expected, object actual, string format = null, Func<object, string> formatter = null) : base(name, expected, format, formatter)
+        public Mismatch(string name, object expected, object actual, string format = null, Func<object, string> formatter = null) : base(name, expected, true, format, formatter)
         {
             Actual = actual;
         }
