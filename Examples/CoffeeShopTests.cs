@@ -33,6 +33,7 @@ namespace Examples
                 .When(new MakeFlatWhite(Guid.NewGuid()))
                 .Then(new MilkUsed(Guid.NewGuid(), 4), new CoffeeUsed(Guid.NewGuid(), 3)));
         }
+
         [Theory]
         [InlineData(10, 0, "Not enough milk")]
         [InlineData(10, 3, "Not enough milk")]
@@ -66,10 +67,8 @@ namespace Examples
                     [typeof(DeliverCoffee)] = c => _shop.ReceiveCoffee(((DeliverCoffee)c).Amount),
                     [typeof(DeliverMilk)] = c => _shop.ReceiveCoffee(((DeliverMilk)c).Amount)
                 };
-
+                this.Configure(cfg => cfg.IgnoreAll("Id"));
             }
-
-            protected override IReadOnlyList<string> IgnoredProperties => new[] { "Id" };
 
             protected override Task Given(IReadOnlyList<Event> givens)
             {

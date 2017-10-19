@@ -10,25 +10,30 @@ namespace Xunit.ScenarioReporting
 {
     internal class ReflectionReader
     {
-        private readonly Dictionary<Type, Func<string, object, ObjectPropertyDefinition>> _customPropertyReaders;
-        
+        private readonly Dictionary<Type, Func<string, bool, object, ObjectPropertyDefinition>> _customPropertyReaders;
+
         readonly Func<Type, string, bool> _skipProperty;
         private readonly Func<Type, bool> _skipType;
+        private readonly Dictionary<Type, string> _formatStrings;
+        private readonly Dictionary<Type, Func<object, string>> _formatters;
         private readonly IReadOnlyList<MemberInfo> _hiddenByDefault;
 
         public ReflectionReader(
             Dictionary<Type, string> formatStrings,
             Dictionary<Type, Func<object, string>> formatters,
-            IReadOnlyList<MemberInfo> hiddenByDefault, 
-            Dictionary<Type, Func<string, object, ObjectPropertyDefinition>> customPropertyReaders,
+            IReadOnlyList<MemberInfo> hiddenByDefault,
+            Dictionary<Type, Func<string, bool, object, ObjectPropertyDefinition>> customPropertyReaders,
             Func<Type, string, bool> skipProperty,
             Func<Type, bool> skipType)
         {
+            _formatStrings = formatStrings;
+            _formatters = formatters;
             _hiddenByDefault = hiddenByDefault;
             _skipProperty = skipProperty;
             _skipType = skipType;
             _customPropertyReaders = customPropertyReaders;
         }
+
         public ObjectPropertyDefinition Read(object value)
         {
             var pending = new Stack<ToRead>();
@@ -45,20 +50,20 @@ namespace Xunit.ScenarioReporting
                     visited.Add(current.Value);
                 }
                 var currentProps = new List<ObjectPropertyDefinition>();
-                if (CustomProperties(current.Type, current.Name, current.Value, current.Parent)) continue;
+                if (CustomProperties(current.Type, current.Name, current.DisplayedByDefault, current.Value, current.Parent)) continue;
                 current.Parent.Add(
                     new ObjectPropertyDefinition(
-                        current.Type, 
-                        current.Name, 
+                        current.Type,
+                        current.Name,
                         current.DisplayedByDefault,
-                        GetValue(current), 
-                        null, 
-                        null,
+                        GetValue(current),
+                        GetFormatString(current.Type),
+                        GetFormatter(current.Type),
                         currentProps));
-                
+
                 if (SkipType(current.Type)) continue;
                 if (current.Value is null) continue;
-                
+
                 if (current.Value is IDictionary)
                 {
                     var entries = new Dictionary<object, object>();
@@ -88,7 +93,7 @@ namespace Xunit.ScenarioReporting
                 }
                 else
                 {
-                    
+
                     foreach (var f in current.Type.GetFields(BindingFlags.Public | BindingFlags.Instance).Reverse())
                     {
                         if (_skipProperty(current.Type, f.Name) || _skipProperty(f.DeclaringType, f.Name)) continue;
@@ -100,7 +105,7 @@ namespace Xunit.ScenarioReporting
                             throw new Exception(
                                 $"Type {current.Type} appears to be endlessly recursive or has more properties than can sensibly be compared, please specify a custom property reader or skip the properties for this type")
                             {
-                                Data = {["PendingStack"] = pending.Select(x => x.Type).ToArray()}
+                                Data = { ["PendingStack"] = pending.Select(x => x.Type).ToArray() }
                             };
                         }
                     }
@@ -120,9 +125,21 @@ namespace Xunit.ScenarioReporting
             return topLevel[0];
         }
 
+        private string GetFormatString(Type type)
+        {
+            _formatStrings.TryGetValue(type, out var result);
+            return result;
+        }
+
+        private Func<object, string> GetFormatter(Type type)
+        {
+            _formatters.TryGetValue(type, out var result);
+            return result;
+        }
+
         private bool DisplayByDefault(MemberInfo memberInfo)
         {
-            return !_hiddenByDefault.Any(x=> x.DeclaringType == memberInfo.DeclaringType && x.Name == memberInfo.Name);
+            return !_hiddenByDefault.Any(x => x.DeclaringType == memberInfo.DeclaringType && x.Name == memberInfo.Name);
         }
 
         private static object GetValue(ToRead current)
@@ -136,13 +153,13 @@ namespace Xunit.ScenarioReporting
             return current.Value;
         }
 
-        bool CustomProperties(Type type, string name, object instance, List<ObjectPropertyDefinition> definitions)
+        bool CustomProperties(Type type, string name, bool displayByDefault, object instance, List<ObjectPropertyDefinition> definitions)
         {
             while (type != null && type != typeof(object))
             {
                 if (_customPropertyReaders.TryGetValue(type, out var reader))
                 {
-                    var def = reader(name, instance);
+                    var def = reader(name, displayByDefault, instance);
                     definitions.Add(def);
                     return true;
                 }
@@ -171,13 +188,12 @@ namespace Xunit.ScenarioReporting
 
         bool SkipType(Type type)
         {
-            
-            return 
-                type.IsPrimitive || 
+            return
+                type.IsPrimitive ||
                 type.IsEnum ||
-                type == typeof(DateTime) || 
-                type == typeof(string) || 
-                type == typeof(DateTimeOffset) || 
+                type == typeof(DateTime) ||
+                type == typeof(string) ||
+                type == typeof(DateTimeOffset) ||
                 type == typeof(Guid) ||
                 (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)) ||
                 _skipType(type);
@@ -228,9 +244,9 @@ namespace Xunit.ScenarioReporting
     internal class ReflectionComparerer
     {
         private readonly ReflectionReader _reader;
-        private readonly IReadOnlyDictionary<Type, IEqualityComparer> _comparers;
+        private readonly IReadOnlyDictionary<Type, object> _comparers;
 
-        public ReflectionComparerer(ReflectionReader reader, IReadOnlyDictionary<Type, IEqualityComparer> comparers)
+        public ReflectionComparerer(ReflectionReader reader, IReadOnlyDictionary<Type, object> comparers)
         {
             _reader = reader;
             _comparers = comparers;
@@ -293,17 +309,32 @@ namespace Xunit.ScenarioReporting
                 }
                 else
                 {
-                    if (!_comparers.TryGetValue(expected.Type, out var comparer))
-                        comparer = DefaultComparerFor(expected.Type);
-                    if (comparer.Equals(expected.Value, actual.Value))
+                    if (CompareValues(expected.Type)(expected.Value, actual.Value))
                         parent.Add(new Match(expected.Name, expected.Value, expected.DisplayBydefault, expected.Format, expected.Formatter));
                     else
                         parent.Add(new Mismatch(expected.Name, expected.Value, actual.Value, expected.Format,
                             expected.Formatter));
                 }
+
+
             }
         }
 
+        private static readonly MethodInfo _openCompareValues =
+            new Func<object, Func<object, object, bool>>(CompareValues<object>).Method.GetGenericMethodDefinition();
+        Func<object, object, bool> CompareValues(Type type)
+        {
+            _comparers.TryGetValue(type, out var comparer);
+            comparer = comparer ?? DefaultComparerFor(type);
+            return Comparers.GetOrAdd(type,
+                (Func<object, object, bool>) _openCompareValues.MakeGenericMethod(type)
+                    .Invoke(null, new[] {comparer}));
+        }
+
+        static Func<object, object, bool> CompareValues<T>(object comparer)
+        {
+            return (expected, actual) => ((IEqualityComparer<T>)comparer).Equals((T)expected, (T)actual);
+        }
         struct ExpectedReadResult
         {
             public ExpectedReadResult(List<Detail> parent, ObjectPropertyDefinition value)
@@ -316,17 +347,12 @@ namespace Xunit.ScenarioReporting
             public ObjectPropertyDefinition Value { get; }
         }
 
-        static readonly ConcurrentDictionary<Type, IEqualityComparer> DefaultComparers = new ConcurrentDictionary<Type, IEqualityComparer>();
-        static IEqualityComparer DefaultComparerFor(Type type)
+        static readonly ConcurrentDictionary<Type, Func<object, object, bool>> Comparers = new ConcurrentDictionary<Type, Func<object, object, bool>>();
+        static object DefaultComparerFor(Type type)
         {
-            IEqualityComparer CreateComparer(Type t)
-            {
-                var eq = typeof(EqualityComparer<>).MakeGenericType(t);
-                var @default = eq.GetProperty("Default", BindingFlags.Public | BindingFlags.Static);
-                return (IEqualityComparer)@default.GetValue(null, new object[] { });
-            }
-
-            return DefaultComparers.GetOrAdd(type, CreateComparer);
+            var eq = typeof(EqualityComparer<>).MakeGenericType(type);
+            var @default = eq.GetProperty("Default", BindingFlags.Public | BindingFlags.Static);
+            return @default.GetValue(null, new object[] { });
         }
     }
 }

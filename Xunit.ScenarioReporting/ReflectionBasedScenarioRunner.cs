@@ -1,5 +1,7 @@
 using System;
+using System.CodeDom;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -8,6 +10,107 @@ using Xunit.ScenarioReporting.Results;
 
 namespace Xunit.ScenarioReporting
 {
+    public abstract class ReflectionBasedScenarioRunner : ScenarioRunner
+    {
+        internal ReflectionBasedScenarioRunner()
+        {
+            FormatTypeStrings = new Dictionary<Type, string>();
+            Formatters = new Dictionary<Type, Func<object, string>>();
+            SkipTypes = new HashSet<Type>();
+            CustomPropertyReaders = new Dictionary<Type, Func<string, bool, object, ObjectPropertyDefinition>>();
+            _ignoredProperties = new Dictionary<Type, HashSet<string>>();
+            this.Configure(cfg => cfg
+                .CustomReader<TimeSpan>((t, d, n) => new ObjectPropertyDefinition(typeof(TimeSpan), n, d, t, "{0:g}", null, new ObjectPropertyDefinition[]{})));
+        }
+
+        internal Dictionary<Type, string> FormatTypeStrings { get; }
+        internal Dictionary<Type, Func<object, string>> Formatters { get; }
+        internal Dictionary<Type, Func<string, bool, object, ObjectPropertyDefinition>> CustomPropertyReaders { get; }
+        internal HashSet<Type> SkipTypes { get; }
+
+        /// <summary>
+        /// Specifies a string to use to format a type.
+        /// </summary>
+        /// <typeparam name="T">The type to format.</typeparam>
+        /// <param name="format">The format string used to format instance of the specified type.</param>
+        internal void AddFormat<T>(string format)
+        {
+            FormatTypeStrings[typeof(T)] = format;
+        }
+
+        /// <summary>
+        /// Adds a custom formatter for the specified type
+        /// </summary>
+        /// <typeparam name="T">The type that the formatter will be used for.</typeparam>
+        /// <param name="formatter">The function that will render the type as a string</param>
+        internal void AddFormat<T>(Func<T, string> formatter)
+        {
+            Formatters[typeof(T)] = o => formatter((T)o);
+        }
+        /// <summary>
+        /// Adds a custom property reader for types where reflection is giving an undesired result.
+        /// </summary>
+        /// <typeparam name="T">The type that the reader will be used for</typeparam>
+        /// <param name="reader">The function that will take an instance of the type and turn it into a representation that can be reported and compared.</param>
+        internal void AddCustomPropertyReader<T>(Func<T, bool, string, ObjectPropertyDefinition> reader)
+        {
+            CustomPropertyReaders[typeof(T)] = (s, d, o) => reader((T)o, d, s);
+        }
+        
+        internal List<MemberInfo> HiddenByDefault { get; } = new List<MemberInfo>();
+
+        internal void HideByDefault<T, P>(Expression<Func<T, P>> toHide)
+        {
+            if (toHide.Body is MemberExpression)
+            {
+                var exp = (MemberExpression)toHide.Body;
+                HiddenByDefault.Add(exp.Member);
+            }
+        }
+        /// <summary>
+        /// A custom set of comparers used when verifying the scenarioRunner. Can be used to provide non default comparers.
+        /// </summary>
+        internal Dictionary<Type, object> Comparers => new Dictionary<Type, object>();
+        private readonly Dictionary<Type, HashSet<string>> _ignoredProperties;
+        private readonly ConcurrentDictionary<Type, HashSet<string>> _flattenedIgnoredProperties = new ConcurrentDictionary<Type, HashSet<string>>();
+        internal HashSet<string> IgnoredByType(Type type)
+        {
+            HashSet<string> Filter(Type inner)
+            {
+                var collated = new HashSet<string>();
+
+                do
+                {
+                    if (!_ignoredProperties.TryGetValue(inner, out var ignored)) ignored = new HashSet<string>();
+                    collated.UnionWith(ignored);
+
+                    inner = inner.BaseType;
+                } while (inner != null);
+                return collated;
+            }
+
+            return _flattenedIgnoredProperties.GetOrAdd(type, Filter);
+        }
+
+        internal void Ignore<T>(string propertyName)
+        {
+            if (!_ignoredProperties.TryGetValue(typeof(T), out var ignored))
+            {
+                ignored = new HashSet<string>();
+                _ignoredProperties[typeof(T)] = ignored;
+            }
+            ignored.Add(propertyName);
+        }
+        internal void AddWildcardIgnore(string propertyName)
+        {
+            Ignore<object>(propertyName);
+        }
+
+        internal void AddComparer<T>(IEqualityComparer<T> comparer)
+        {
+            Comparers[typeof(T)] = comparer;
+        }
+    }
     /// <summary>
     /// Generates reports using reflection to pull the details from the definition. Applies the Given and When from
     /// the definition to the subject under test and then verifies the results using reflection.
@@ -19,19 +122,8 @@ namespace Xunit.ScenarioReporting
     /// to use the Given/When/Then
     /// Generally you can provide a single inherited version of this class to run multiple scenarioRunner definitions</remarks>
     /// <inheritdoc />
-    public abstract class ReflectionBasedScenarioRunner<TGiven, TWhen, TThen> : ScenarioRunner
+    public abstract class ReflectionBasedScenarioRunner<TGiven, TWhen, TThen> : ReflectionBasedScenarioRunner
     {
-        /// <inheritdoc />
-        /// <summary>
-        /// Creates an instance of <see cref="T:Xunit.ScenarioReporting.ReflectionBasedScenarioRunner`3" />
-        /// </summary>
-        protected ReflectionBasedScenarioRunner()
-        {
-            _formatTypeStrings = new Dictionary<Type, string>();
-            _formatters = new Dictionary<Type, Func<object, string>>();
-            _skipTypes = new HashSet<Type>();
-            _customPropertyReaders = new Dictionary<Type, Func<string, object, ObjectPropertyDefinition>>();
-        }
         /// <summary>
         /// Provides access to the scenarioRunner definition. The preferred way of builidng this is to use the <see cref="ReflectionBasedScenarioExtensions.Run{TGiven,TWhen,TThen}"/>
         /// method which provids a fluent builder for defining the current scenarioRunner.
@@ -138,11 +230,12 @@ namespace Xunit.ScenarioReporting
 
             if (_run) return;
             _run = true;
-            _reader = new ReflectionReader(_formatTypeStrings, _formatters, HiddenByDefault, _customPropertyReaders, (type, property) =>
+            _reader = new ReflectionReader(FormatTypeStrings, Formatters, HiddenByDefault, CustomPropertyReaders, 
+                (type, property) =>
             {
                 var properties = IgnoredByType(type);
                 return properties.Contains(property);
-            }, t => _skipTypes.Contains(t));
+            }, t => SkipTypes.Contains(t));
             _comparer = new ReflectionComparerer(_reader, Comparers);
             RecordSetup();
             try
@@ -178,7 +271,7 @@ namespace Xunit.ScenarioReporting
                 return;
             }
             if (actual.GetType() != expected.GetType())
-                details.Add(new Mismatch("Type", expected.GetType(), actual.GetType(), formatter: Formatters.FromClassName));
+                details.Add(new Mismatch("Type", expected.GetType(), actual.GetType(), formatter: CommonFormatters.FromClassName));
             if (verifyExceptionMessage)
                 if (expected.Message == actual.Message)
                     details.Add(new Match("Message", expected.Message, true));
@@ -231,77 +324,7 @@ namespace Xunit.ScenarioReporting
         /// </summary>
         /// <returns>A <see cref="Task{TThen}"/> that should complete when the results are available</returns>
         protected abstract Task<IReadOnlyList<TThen>> ActualResults();
-
-        /// <summary>
-        /// Allows the ignoring of properties for reporting and comparison
-        /// </summary>
-        /// <remarks>
-        /// A string of "Id" will ignore the property Id on all object instances.
-        /// A string of "SomeClassName.Id" will ignore the property Id on instances of the SomeClassName type.
-        /// The ignored properties will be a union of ignored on the type and ignored on all. There is no concept of inheritance
-        /// in the ignored properties so specifying an abstract or base class name in the string will not have any effect.
-        /// </remarks>
-        protected virtual IReadOnlyList<string> IgnoredProperties => new string[] { };
-
-        private List<MemberInfo> HiddenByDefault { get; } = new List<MemberInfo>();
-
-        protected void HideByDefault<T, P>(Expression<Func<T, P>> toHide)
-        {
-            if (toHide.Body is MemberExpression)
-            {
-                var exp = (MemberExpression) toHide.Body;
-                HiddenByDefault.Add(exp.Member);
-            }   
-        }
-        /// <summary>
-        /// A custom set of comparers used when verifying the scenarioRunner. Can be used to provide non default comparers.
-        /// </summary>
-        protected virtual IReadOnlyDictionary<Type, IEqualityComparer> Comparers => new Dictionary<Type, IEqualityComparer>();
-        private Dictionary<string, HashSet<string>> _ignoredProperties;
-
-        private HashSet<string> IgnoredByType(Type type)
-        {
-            void EnsureInitialized()
-            {
-                if (_ignoredProperties == null)
-                {
-                    var ignoredByType = new Dictionary<string, HashSet<string>>()
-                    {
-                        ["*"] = new HashSet<string>()
-                    };
-
-                    foreach (var ignored in IgnoredProperties)
-                    {
-                        //TODO: ignore hierarchies or support them? maybe better to use json.net and paths to remove entries we don't like
-                        string[] split;
-                        if (ignored.Contains("."))
-                            split = ignored.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
-                        else
-                            split = new[] { "*", ignored };
-                        HashSet<string> properties;
-                        if (!ignoredByType.TryGetValue(split[0], out properties))
-                        {
-                            properties = new HashSet<string>();
-                            ignoredByType[split[0]] = properties;
-                        }
-                        properties.Add(split[1]);
-                    }
-                    _ignoredProperties = ignoredByType;
-                }
-            }
-
-            HashSet<string> Filter()
-            {
-                HashSet<string> ignored;
-                if (!_ignoredProperties.TryGetValue(type.Name, out ignored)) ignored = new HashSet<string>();
-                ignored.UnionWith(_ignoredProperties["*"]);
-                return ignored;
-            }
-
-            EnsureInitialized();
-            return Filter();
-        }
-
+        
         private void Verify(IReadOnlyList<TThen> expected, IReadOnlyList<TThen> actual)
         {
             var maxIterations = Math.Min(expected.Count, actual.Count);
@@ -318,7 +341,7 @@ namespace Xunit.ScenarioReporting
                 List<Detail> missingResults = new List<Detail>();
                 for (int i = Math.Max(0, actual.Count - 1); i < expected.Count; i++)
                 {
-                    missingResults.Add(new MissingResult("Type", expected[i], formatter: Formatters.FromClassName));
+                    missingResults.Add(new MissingResult("Type", expected[i], formatter: CommonFormatters.FromClassName));
                 }
                 Add(new Then(Scope, "Missing expected results", missingResults));
             }
@@ -327,47 +350,15 @@ namespace Xunit.ScenarioReporting
                 List<Detail> extraResults = new List<Detail>();
                 for (int i = expected.Count; i < actual.Count; i++)
                 {
-                    extraResults.Add(new ExtraResult("Type", actual[i], formatter: Formatters.FromClassName));
+                    extraResults.Add(new ExtraResult("Type", actual[i], formatter: CommonFormatters.FromClassName));
                 }
 
                 Add(new Then(Scope, "More results than expected", extraResults));
             }
         }
-        private readonly Dictionary<Type, string> _formatTypeStrings;
-        private readonly Dictionary<Type, Func<object, string>> _formatters;
-        private readonly Dictionary<Type, Func<string, object, ObjectPropertyDefinition>> _customPropertyReaders;
         private ReflectionReader _reader;
         private ReflectionComparerer _comparer;
-        private readonly HashSet<Type> _skipTypes;
-
-        /// <summary>
-        /// Specifies a string to use to format a type.
-        /// </summary>
-        /// <typeparam name="T">The type to format.</typeparam>
-        /// <param name="format">The format string used to format instance of the specified type.</param>
-        protected void AddFormatString<T>(string format)
-        {
-            _formatTypeStrings[typeof(T)] = format;
-        }
-
-        /// <summary>
-        /// Adds a custom formatter for the specified type
-        /// </summary>
-        /// <typeparam name="T">The type that the formatter will be used for.</typeparam>
-        /// <param name="formatter">The function that will render the type as a string</param>
-        protected void AddFormatter<T>(Func<T, string> formatter)
-        {
-            _formatters.Add(typeof(T), o => formatter((T)o));
-        }
-        /// <summary>
-        /// Adds a custom property reader for types where reflection is giving an undesired result.
-        /// </summary>
-        /// <typeparam name="T">The type that the reader will be used for</typeparam>
-        /// <param name="reader">The function that will take an instance of the type and turn it into a representation that can be reported and compared.</param>
-        protected void AddCustomPropertyReader<T>(Func<T, string, ObjectPropertyDefinition> reader)
-        {
-            _customPropertyReaders.Add(typeof(T), (s, o) => reader((T)o, s));
-        }
+        
     }
 
     /// <inheritdoc />
