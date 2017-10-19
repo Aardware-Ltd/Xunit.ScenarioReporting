@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Xsl;
@@ -56,23 +57,28 @@ namespace Xunit.ScenarioReporting
         {
             _diagnosticMessageSink.OnMessage(new DiagnosticMessage("Completing report"));
             await Report.WriteFinalAsync();
-            _xw.Close();
-            _xw.Dispose();
-
-            await _sw.FlushAsync();
-            _sw.Dispose();
-            _fileStream.Dispose();
-
-            if (_configuration.WriteHtml)
+            if (_configuration.WriteOutput)
             {
-                _diagnosticMessageSink.OnMessage(new DiagnosticMessage($"Writing html to {_configuration.HtmlReportFile}"));
-                await WriteHTML(_configuration.XmlReportFile, _configuration.HtmlReportFile);
-            }
+                _xw.Close();
+                _xw.Dispose();
 
-            if (_configuration.WriteMarkdown)
-            {
-                _diagnosticMessageSink.OnMessage(new DiagnosticMessage($"Writing markdown to {_configuration.MarkdownReportFile}"));
-                WriteMarkdown(_configuration.XmlReportFile, _configuration.MarkdownReportFile);
+                await _sw.FlushAsync();
+                _sw.Dispose();
+                _fileStream.Dispose();
+
+                if (_configuration.WriteHtml)
+                {
+                    _diagnosticMessageSink.OnMessage(
+                        new DiagnosticMessage($"Writing html to {_configuration.HtmlReportFile}"));
+                    await WriteHTML(_configuration.XmlReportFile, _configuration.HtmlReportFile);
+                }
+
+                if (_configuration.WriteMarkdown)
+                {
+                    _diagnosticMessageSink.OnMessage(
+                        new DiagnosticMessage($"Writing markdown to {_configuration.MarkdownReportFile}"));
+                    WriteMarkdown(_configuration.XmlReportFile, _configuration.MarkdownReportFile);
+                }
             }
         }
 
@@ -153,29 +159,26 @@ namespace Xunit.ScenarioReporting
     class ReportWriter : IReportWriter
     {
         private readonly XmlWriter _output;
-        private readonly IReadOnlyDictionary<Type, Func<XmlWriter, ReportItem, Task>> _handlers;
-
+        
         public ReportWriter(XmlWriter output)
         {
-            _handlers = new Dictionary<Type, Func<XmlWriter, ReportItem, Task>>()
-            {
-                [typeof(StartReport)] = this.StartReport,
-                [typeof(EndReport)] = this.EndReport,
-                [typeof(StartScenario)] = this.StartScenario,
-                [typeof(EndScenario)] = this.EndScenario,
-                [typeof(Given)] = this.Given,
-                [typeof(When)] = this.When,
-                [typeof(Then)] = this.Then,
-                [typeof(Assertion)] = this.Then,
-            };
+            //_handlers = new Dictionary<Type, Func<XmlWriter, ReportItem, Task>>()
+            //{
+            //    [typeof(StartReport)] = this.StartReport,
+            //    [typeof(EndReport)] = this.EndReport,
+            //    [typeof(StartScenario)] = this.StartScenario,
+            //    [typeof(EndScenario)] = this.EndScenario,
+            //    [typeof(Given)] = this.Given,
+            //    [typeof(When)] = this.When,
+            //    [typeof(Then)] = this.Then,
+            //    [typeof(Assertion)] = this.Then,
+            //};
 
             _output = output;
         }
 
-
-        private async Task StartReport(XmlWriter writer, ReportItem item)
+        private async Task StartReport(XmlWriter writer, StartReport start)
         {
-            var start = (StartReport)item;
             await writer.WriteStartDocumentAsync();
 
             await writer.WriteStartElementAsync(null, XmlTagAssembly, null);
@@ -186,9 +189,8 @@ namespace Xunit.ScenarioReporting
 
         }
 
-        private async Task StartScenario(XmlWriter writer, ReportItem item)
+        private async Task StartScenario(XmlWriter writer, StartScenario start)
         {
-            var start = (StartScenario)item;
             await writer.WriteStartElementAsync(null, XmlTagScenario, null);
 
             await writer.WriteElementStringAsync(null, XmlTagName, null, start.Name);
@@ -204,102 +206,103 @@ namespace Xunit.ScenarioReporting
                 await writer.WriteElementStringAsync(null, XmlTagNDG, null, "[None created, because Name is a custom name.]");
             }
             await writer.WriteElementStringAsync(null, XmlTagScope, null, start.Scope);
-
-
         }
 
 
-        private async Task Given(XmlWriter writer, ReportItem item)
+        private async Task Given(XmlWriter writer, Given given)
         {
-            var given = (Given)item;
             await writer.WriteStartElementAsync(null, XmlTagGiven, null);
-            await WriteDetails(writer, given.Title, given.Details);
+            await WriteContainerDetail(writer, true, given.Title, given.Details);
             await writer.WriteEndElementAsync();
         }
 
-        private async Task Then(XmlWriter writer, ReportItem item)
+        private async Task Then(XmlWriter writer, Then then)
         {
-            var then = (Then)item;
             await writer.WriteStartElementAsync(null, XmlTagThen, null);
+            await WriteContainerDetail(writer,true, then.Title, then.Details);
             await writer.WriteElementStringAsync(null, XmlTagScope, null, then.Scope);
-            await WriteDetails(writer, then.Title, then.Details);
             await writer.WriteEndElementAsync();
         }
 
-        private async Task When(XmlWriter writer, ReportItem item)
+        private async Task When(XmlWriter writer, When when)
         {
-            var when = (When)item;
             await writer.WriteStartElementAsync(null, XmlTagWhen, null);
-            await WriteDetails(writer, when.Title, when.Details);
+            await WriteContainerDetail(writer, true, when.Title, when.Details);
             await writer.WriteEndElementAsync();
         }
 
-        private static async Task WriteDetails(XmlWriter writer, string title, IReadOnlyList<Detail> details)
+        private async Task WriteContainerDetail(XmlWriter writer, bool displayByDefault, string title, IReadOnlyList<Detail> children)
         {
+            await writer.WriteStartElementAsync(null, XmlTagDetails, null);
+            await writer.WriteAttributeStringAsync(null, XmlAttributeShowDetail, null, displayByDefault.ToString());
             await writer.WriteElementStringAsync(null, XmlTagTitle, null, title);
-
-            foreach (var detail in details)
+            foreach (var detail in children)
             {
-                await writer.WriteStartElementAsync(null, XmlTagDetail, null);
-                
-                if (detail is Failure)
-                {
-                    await writer.WriteStartElementAsync(null, XmlTagFailure, null);
-
-                    await writer.WriteStartElementAsync(null, XmlTagException, null);
-                    var failure = detail as Failure;
-                    await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
-                    await writer.WriteElementStringAsync(null, XmlTagType, null, failure.Type.ToString());
-                    await writer.WriteElementStringAsync(null, XmlTagValue, null, failure.Value.ToString()); // Value should contain stack trace for Exceptions
-                    await writer.WriteEndElementAsync(); // /Exception
-
-                    await writer.WriteEndElementAsync(); // /Failure
-
-                }
-                else if (detail.Formatter != null)
-                {
-                    await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
-                    await writer.WriteElementStringAsync(null, XmlTagValue, null, detail.Formatter(detail.Value));
-
-                    var mismatch = detail as Mismatch;
-                    if (mismatch != null)
-                    {
-                        await WriteFailureMismatch(writer, mismatch.Name, mismatch.Formatter(mismatch.Value), mismatch.Formatter(mismatch.Actual));
-                    }
-
-                }
-                else if (detail.Format != null)
-                {
-                    await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
-                    await writer.WriteElementStringAsync(null, XmlTagValue, null, string.Format(detail.Format, detail.Value));
-                    var mismatch = detail as Mismatch;
-                    if (mismatch != null)
-                    {
-                        await WriteFailureMismatch(writer, mismatch.Name, string.Format(detail.Format, mismatch.Value), string.Format(detail.Format, mismatch.Actual));
-                    }
-                }
+                if (detail.Children.Any())
+                    await WriteContainerDetail(writer, detail.DisplayByDefault, detail.Name, detail.Children);
                 else
-                {
-                    await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
-                    await writer.WriteElementStringAsync(null, XmlTagValue, null, $"{detail.Value}");
-                    var mismatch = detail as Mismatch;
-                    if (mismatch != null)
-                    {
-                        await WriteFailureMismatch(writer, mismatch.Name, $"{mismatch.Value}", mismatch.Actual?.ToString());
-                    }
-                }
-
-                //Recurse any children
-                foreach (var childDetail in detail.Children)
-                {
-                    await writer.WriteStartElementAsync(null, XmlTagChild, null);
-                    await WriteDetails(writer, childDetail.Name, childDetail.Children);
-                    await writer.WriteEndElementAsync(); // /Child
-                } 
-
-                await writer.WriteEndElementAsync(); // /Detail
+                    await WriteDetail(writer, displayByDefault, detail);
             }
+            await writer.WriteEndElementAsync();
+        }
+        
+        private static async Task WriteDetail(XmlWriter writer, bool parentIsVisible, Detail detail)
+        {
+            await writer.WriteStartElementAsync(null, XmlTagDetail, null);
 
+            var showDetail = parentIsVisible & detail.DisplayByDefault;
+
+            await writer.WriteAttributeStringAsync(null, XmlAttributeShowDetail, null, showDetail.ToString());
+
+            if (detail is Failure)
+            {
+                await writer.WriteStartElementAsync(null, XmlTagFailure, null);
+
+                await writer.WriteStartElementAsync(null, XmlTagException, null);
+                var failure = detail as Failure;
+                await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
+                await writer.WriteElementStringAsync(null, XmlTagType, null, failure.Type.ToString());
+                await writer.WriteElementStringAsync(null, XmlTagValue, null,
+                    failure.Value.ToString()); // Value should contain stack trace for Exceptions
+                await writer.WriteEndElementAsync(); // /Exception
+
+                await writer.WriteEndElementAsync(); // /Failure
+            }
+            else if (detail.Formatter != null)
+            {
+                await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
+                await writer.WriteElementStringAsync(null, XmlTagValue, null, detail.Formatter(detail.Value));
+
+                var mismatch = detail as Mismatch;
+                if (mismatch != null)
+                {
+                    await WriteFailureMismatch(writer, mismatch.Name, mismatch.Formatter(mismatch.Value),
+                        mismatch.Formatter(mismatch.Actual));
+                }
+            }
+            else if (detail.Format != null)
+            {
+                await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
+                await writer.WriteElementStringAsync(null, XmlTagValue, null, string.Format(detail.Format, detail.Value));
+                var mismatch = detail as Mismatch;
+                if (mismatch != null)
+                {
+                    await WriteFailureMismatch(writer, mismatch.Name, string.Format(detail.Format, mismatch.Value),
+                        string.Format(detail.Format, mismatch.Actual));
+                }
+            }
+            else
+            {
+                await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
+                await writer.WriteElementStringAsync(null, XmlTagValue, null, $"{detail.Value}");
+                var mismatch = detail as Mismatch;
+                if (mismatch != null)
+                {
+                    await WriteFailureMismatch(writer, mismatch.Name, $"{mismatch.Value}", mismatch.Actual?.ToString());
+                }
+            }
+            
+            await writer.WriteEndElementAsync(); // /Detail
         }
 
         private static async Task WriteFailureMismatch(XmlWriter writer, string name, string valueExpected, string valueActual)
@@ -354,16 +357,26 @@ namespace Xunit.ScenarioReporting
 
         }
 
-        public async Task Write(ReportItem item)
+        public Task Write(ReportItem item)
         {
-            Func<XmlWriter, ReportItem, Task> handler;
-            if (_handlers.TryGetValue(item.GetType(), out handler))
+            switch (item)
             {
-                await handler(_output, item);
-            }
-            else
-            {
-                throw new InvalidOperationException($"Unsupported report item of type {item.GetType().FullName}");
+                case StartReport startReport:
+                    return StartReport(_output, startReport);
+                case EndReport endReport:
+                    return EndReport(_output, endReport);
+                case StartScenario startScenario:
+                    return StartScenario(_output, startScenario);
+                case EndScenario endScenario:
+                    return EndScenario(_output, endScenario);
+                case Given given:
+                    return Given(_output, given);
+                case When @when:
+                    return When(_output, @when);
+                case Then then:
+                    return Then(_output, then);
+                default:
+                    throw new InvalidOperationException($"Unsupported report item of type {item.GetType().FullName}");
             }
         }
     }

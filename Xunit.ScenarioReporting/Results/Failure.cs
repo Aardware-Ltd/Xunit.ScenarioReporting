@@ -6,7 +6,7 @@ namespace Xunit.ScenarioReporting.Results
     {
         public Type Type { get; }
 
-        public Failure(string name, Type type, string stacktrace) : base(name, stacktrace)
+        public Failure(string name, Type type, string stacktrace) : base(name, stacktrace, true)
         {
             Type = type;
         }
