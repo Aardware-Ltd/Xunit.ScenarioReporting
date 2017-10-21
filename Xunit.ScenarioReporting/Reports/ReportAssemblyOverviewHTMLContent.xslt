@@ -723,6 +723,9 @@
                         <xsl:if test="$cntDefinition > 0">
                             <ul class="menu">
                                 <xsl:for-each select="Assembly/Definition">
+
+                                  <xsl:sort select="Name"/>
+
                                     <li class="menu-item">
                                         <a href="#{generate-id(Name)}">
                                             <xsl:value-of select="Name" />
@@ -745,6 +748,8 @@
                     <div class="report-body">
 
                         <xsl:for-each select="Assembly/Definition">
+
+                          <xsl:sort select="Name"/>
 
                             <a name="{generate-id(Name)}"></a>
                             <section class="section-scenario">
