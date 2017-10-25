@@ -162,18 +162,6 @@ namespace Xunit.ScenarioReporting
         
         public ReportWriter(XmlWriter output)
         {
-            //_handlers = new Dictionary<Type, Func<XmlWriter, ReportItem, Task>>()
-            //{
-            //    [typeof(StartReport)] = this.StartReport,
-            //    [typeof(EndReport)] = this.EndReport,
-            //    [typeof(StartScenario)] = this.StartScenario,
-            //    [typeof(EndScenario)] = this.EndScenario,
-            //    [typeof(Given)] = this.Given,
-            //    [typeof(When)] = this.When,
-            //    [typeof(Then)] = this.Then,
-            //    [typeof(Assertion)] = this.Then,
-            //};
-
             _output = output;
         }
 
@@ -206,9 +194,9 @@ namespace Xunit.ScenarioReporting
                 await writer.WriteElementStringAsync(null, XmlTagNDG, null, "[None created, because Name is a custom name.]");
             }
             await writer.WriteElementStringAsync(null, XmlTagScope, null, start.Scope);
+            await writer.WriteElementStringAsync(null, XmlTagGrouping, null, start.Grouping);
         }
-
-
+        
         private async Task Given(XmlWriter writer, Given given)
         {
             await writer.WriteStartElementAsync(null, XmlTagGiven, null);

@@ -34,7 +34,8 @@ namespace Xunit.ScenarioReporting
             try
             {
                 using (ScenarioScope.Push(TestCase.DisplayName))
-                using(ReportContext.Set(_report))
+                using (ScenarioGroup.Push(TestClass.FullName))
+                using (ReportContext.Set(_report))
                 {
                     result = base.CallTestMethod(testClassInstance);
                 }
@@ -53,7 +54,7 @@ namespace Xunit.ScenarioReporting
                 else if (result is ScenarioRunResult)
                 {
                     var scenario = (ScenarioRunResult)result;
-                    VerifyAndReportScenario(scenario, TestCase.DisplayName);
+                    VerifyAndReportScenario(scenario, TestCase.DisplayName, TestClass.FullName);
                 }
                 if (_scenarioRunner != null)
                 {
@@ -72,19 +73,20 @@ namespace Xunit.ScenarioReporting
             }
         }
 
-        private void VerifyAndReportScenario(ScenarioRunResult result, string name)
+        private void VerifyAndReportScenario(ScenarioRunResult result, string name, string grouping)
         {
             if(_scenarioRunner!= null)
                 throw new InvalidOperationException(Constants.Errors.DontReturnScenarioResults);
             result.Scope = name;
+            result.Grouping = result.Grouping ?? grouping;
             _report.Report(result);
             result.ThrowIfErrored();
         }
 
-        private async Task VerifyAndReport<T>(Task<T> scenarioTask, string name) where T : ScenarioRunResult
+        private async Task VerifyAndReport<T>(Task<T> scenarioTask, string name, string grouping) where T : ScenarioRunResult
         {
             ScenarioRunResult result = await scenarioTask;
-            VerifyAndReportScenario(result, name);
+            VerifyAndReportScenario(result, name, grouping);
         }
     }
 }

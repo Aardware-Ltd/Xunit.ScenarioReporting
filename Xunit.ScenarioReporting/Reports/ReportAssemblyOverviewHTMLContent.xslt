@@ -724,7 +724,7 @@
                             <ul class="menu">
                                 <xsl:for-each select="Assembly/Definition">
 
-                                  <xsl:sort select="Name"/>
+                                  <xsl:sort select="Grouping"/>
 
                                     <li class="menu-item">
                                         <a href="#{generate-id(Name)}">

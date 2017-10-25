@@ -46,7 +46,9 @@ namespace Xunit.ScenarioReporting
                 {
                     _scenarioRunner.DelayReporting = true;
                     _scenarioRunner.Scope = Class.Name;
+                    _scenarioRunner.Group = Class.Name;
                 }
+                
             });
         }
 

@@ -26,6 +26,26 @@ namespace Xunit.ScenarioReporting
             }
         }
     }
+    class ScenarioGroup
+    {
+        readonly static AsyncLocal<string> Current = new AsyncLocal<string>();
+
+        public static IDisposable Push(string value)
+        {
+            Current.Value = value;
+            return new Disposer();
+        }
+
+        public static string CurrentValue() => Current.Value;
+
+        class Disposer : IDisposable
+        {
+            public void Dispose()
+            {
+                Current.Value = null;
+            }
+        }
+    }
     /// <summary>
     /// Provides a definition extension to classes deriving from <see cref="ReflectionBasedScenarioRunner{TGiven,TWhen,TThen}"/>.
     /// </summary>
@@ -54,6 +74,7 @@ namespace Xunit.ScenarioReporting
         {
             if (scenarioRunner.Title == null) scenarioRunner.Title = title;
             scenarioRunner.Scope = scenarioRunner.Scope ?? ScenarioScope.CurrentValue();
+            scenarioRunner.Group = scenarioRunner.Group ?? ScenarioGroup.CurrentValue();
             var builder = ReflectionBasedScenarioRunner<TGiven, TWhen, TThen>.ScenarioDefinition.Builder;
             define(builder);
             scenarioRunner.Definition = builder.Build();

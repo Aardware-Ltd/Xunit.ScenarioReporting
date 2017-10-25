@@ -69,7 +69,7 @@ namespace Xunit.ScenarioReporting
                 }
                 if (_when == null)
                     AddResult(null, "Incomplete scenario", new Exception("No when provided"));
-                _result = new ScenarioRunResult(Title, _givens, _when ?? NullWhen, _thens, _error) {Scope = Scope};
+                _result = new ScenarioRunResult(Title, _givens, _when ?? NullWhen, _thens, _error) {Scope = Scope, Grouping = Group};
             }
         }
 
@@ -99,6 +99,7 @@ namespace Xunit.ScenarioReporting
         /// The scope of the scenario. This is determined by where the scenario runner is created, Test method, Class Fixture or Collection Fixture.
         /// </summary>
         protected internal string Scope { get; internal set; }
+        protected internal string Group { get; internal set; }
         internal bool DelayReporting { get; set; }
     }
 }
