@@ -31,8 +31,9 @@ namespace Xunit.ScenarioReporting
             get => _scope;
             set
             {
+                //TODO: review this logic now we have grouping
                 _scope = value;
-                if(value == null) return;
+                if (value == null) return;
                 if (Then.Any(x => x.Scope == null))
                 {
                     var temp = new List<Then>();
@@ -47,9 +48,11 @@ namespace Xunit.ScenarioReporting
                     }
                     Then = temp;
                 }
-                
+
             }
         }
+
+        internal string Grouping { get; set; }
 
         internal string Title { get; set; }
         internal IReadOnlyList<Given> Given { get; }

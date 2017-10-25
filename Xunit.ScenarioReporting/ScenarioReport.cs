@@ -78,7 +78,7 @@ namespace Xunit.ScenarioReporting
             try
             {
                 var writer = new DelayedBatchWriter(_queue);
-                writer.Write(new StartScenario(result.Title ?? result.Scope, result.Scope));
+                writer.Write(new StartScenario(result.Title ?? result.Scope, result.Scope, result.Grouping));
                 foreach (var given in result.Given)
                     writer.Write(given);
                 if(result.When != null)

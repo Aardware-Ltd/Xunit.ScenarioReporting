@@ -39,6 +39,7 @@ namespace Xunit.ScenarioReporting
                 {
                     _scenarioRunner.DelayReporting = true;
                     _scenarioRunner.Scope = TestCollection.CollectionDefinition.Name;
+                    _scenarioRunner.Group = TestCollection.CollectionDefinition.Name;
                 }
             });
         }
