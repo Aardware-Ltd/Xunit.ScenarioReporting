@@ -47,7 +47,7 @@ namespace Xunit.ScenarioReporting
         protected override async Task BeforeTestAssemblyFinishedAsync()
         {
             if(_controller != null)
-                await _controller.Complete();
+                await Aggregator.RunAsync(_controller.Complete);
             await base.BeforeTestAssemblyFinishedAsync();
         }
 
