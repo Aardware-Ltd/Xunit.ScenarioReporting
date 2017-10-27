@@ -1,9 +1,8 @@
 ﻿<html>
-  <head>
-    <META http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <!--<link rel="stylesheet" type="text/css" href="ScenarioReportingTests.css">-->
+<head>
+    <META http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-	<style>
+    <style>
         @import url('https://fonts.googleapis.com/css?family=Raleway');
 
         .color-primary-0 {
@@ -94,6 +93,17 @@
             background-color: #96929F;
         }
 
+        code {
+            background: #F0F5EC;
+            padding: 0 5px 2px;
+            border-radius: 4px;
+            position: relative;
+            top: -1px;
+            margin: 0 3px 0 1px;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+
         .report-assembly {
             padding: 1em;
         }
@@ -115,9 +125,9 @@
             break-before: page;
         }
 
-        .section-scenario li {
-            padding: .2em .1em;
-        }
+            .section-scenario li {
+                padding: .2em .1em;
+            }
 
 
         .section-givens {
@@ -155,6 +165,11 @@
         .section-when:not(:last-child),
         .section-then:not(:last-child) {
             border-bottom: 2px solid #F0F5EC;
+        }
+
+        .nested-child {
+            position-relative;
+            padding-left: 4em;
         }
 
         .assembly-name,
@@ -275,10 +290,11 @@
             animation-name: jello;
             transform-origin: center;
         }
-        .jello:hover {
-            animation-name: jello2;
-            transform-origin: center;
-        }
+
+            .jello:hover {
+                animation-name: jello2;
+                transform-origin: center;
+            }
 
         /* Accordion styles */
         .accordion .tab {
@@ -415,50 +431,106 @@
             font-weight: normal;
         }
 
-	</style>
 
-  </head>
-  <body>  
+        /*#084978;*/
+        .arrow {
+            margin: 1em;
+            position: relative;
+            width: 0;
+            height: 0;
+            border-top: 1em solid transparent;
+            border-right: 1em solid cadetblue;
+            -webkit-transform: rotate(320deg); /*220deg*/
+            -moz-transform: rotate(320deg);
+            -ms-transform: rotate(320deg);
+            -o-transform: rotate(320deg);
+            transform: rotate(320deg);
+        }
+
+            .arrow:after {
+                content: "";
+                position: absolute;
+                border: 0 solid transparent;
+                border-top: 0.5em solid cadetblue;
+                border-radius: 0 2.5em 0 0;
+                top: -2.5em;
+                left: -0.2em;
+                width: 1.5em;
+                height: 1.5em;
+                -webkit-transform: rotate(225deg); /*45deg*/
+                -moz-transform: rotate(225deg);
+                -ms-transform: rotate(225deg);
+                -o-transform: rotate(225deg);
+                transform: rotate(225deg);
+            }
+
+        /*Customisations to show arrow in first child*/
+        .arrow {
+            float: left;
+            margin-left: 1.8em;
+            margin-top: 0.6em;
+        }
+        /*First nested child customisations. Note: first-of-type does not work on class so instead adjust all children and then correct all but the first one.*/
+        .nested-child {
+            margin-top: 1.4em;
+        }
+
+            .nested-child ~ .nested-child {
+                margin-top: initial;
+            }
+    </style>
+
+</head>
+<body>
+
+
     <svg style="position: absolute; width: 0; height: 0; overflow: hidden" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 512 512" xml:space="preserve">
-        <defs>
-            <symbol id="icon-lemon-2" viewBox="0 0 512 512">
-                <path style="fill:#F4DE3B;" d="M452.541,261.129c0-100.923-63.981-185.539-150.123-208.285c0.254-1.975,0.399-3.985,0.399-6.029
+    <defs>
+    <symbol id="icon-lemon-2" viewBox="0 0 512 512">
+    <path style="fill:#F4DE3B;" d="M452.541,261.129c0-100.923-63.981-185.539-150.123-208.285c0.254-1.975,0.399-3.985,0.399-6.029
 	                C302.816,20.961,281.856,0,256.001,0s-46.816,20.961-46.816,46.817c0,2.044,0.145,4.054,0.399,6.029
 	                C123.441,75.592,59.459,160.206,59.459,261.129c0,100.844,63.881,185.405,149.921,208.231c2.116,23.896,22.175,42.635,46.621,42.635
 	                s44.505-18.739,46.621-42.635C388.66,446.534,452.541,361.973,452.541,261.129z" />
-                <path style="fill:#D6BD27;" d="M256.004,512c-24.446,0-44.503-18.748-46.621-42.643C123.341,446.528,59.46,361.974,59.46,261.136
+
+    <path style="fill:#D6BD27;" d="M256.004,512c-24.446,0-44.503-18.748-46.621-42.643C123.341,446.528,59.46,361.974,59.46,261.136
 	                c0-100.928,63.983-185.546,150.129-208.286c-0.257-1.976-0.411-3.991-0.411-6.031c0-25.858,20.968-46.813,46.826-46.813
 	                c-8.957,0-16.22,20.956-16.22,46.813c0,2.04,0.051,4.055,0.141,6.031c-29.823,22.739-51.985,107.357-51.985,208.286
 	                c0,100.839,22.123,185.392,51.921,208.222C240.593,493.252,247.535,512,256.004,512z" />
+
             </symbol>
         </defs>
     </svg>
 
     <svg style="position: absolute; width: 0; height: 0; overflow: hidden" version="1.1" viewBox="0 0 612 792" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-        <style type="text/css">
-            .st0 {
-                clip-path: url(#SVGID_2_);
-                fill: none;
-                stroke: crimson;
-                stroke-width: 45;
-            }
+    <style type="text/css">
+        .st0 {
+            clip-path: url(#SVGID_2_);
+            fill: none;
+            stroke: crimson;
+            stroke-width: 45;
+        }
 
-            .st1 {
-                fill: crimson; /*#E44061;*/
-            }
-        </style>
-        <symbol id="icon-error-x" viewBox="0 0 612 792">
-        <g>
-        <g>
-        <defs>
-            <rect height="512" id="SVGID_1_" width="512" x="50" y="140" />
+        .st1 {
+            fill: crimson; /*#E44061;*/
+        }
+</style>
+    <symbol id="icon-error-x" viewBox="0 0 612 792">
+    <g>
+    <g>
+    <defs>
+    <rect height="512" id="SVGID_1_" width="512" x="50" y="140" />
+
         </defs>
-        <clipPath id="SVGID_2_">
-        <use style="overflow:visible;" xlink:href="#SVGID_1_" />
+    <clipPath id="SVGID_2_">
+    <use style="overflow:visible;" xlink:href="#SVGID_1_" />
+
         </clipPath>
-        <path class="st0" d="M306,629.5c128.8,0,233.5-104.7,233.5-233.5S434.8,162.5,306,162.5S72.5,267.2,72.5,396    S177.2,629.5,306,629.5L306,629.5z" />
+    <path class="st0" d="M306,629.5c128.8,0,233.5-104.7,233.5-233.5S434.8,162.5,306,162.5S72.5,267.2,72.5,396    S177.2,629.5,306,629.5L306,629.5z" />
+
         </g>
-        <polygon class="st1" points="348.7,396 448,296.7 405.3,254 306,353.3 206.7,254 164,296.7 263.3,396 164,495.3 206.7,538    306,438.7 405.3,538 448,495.3 348.7,396  " />
+    <polygon class="st1" points="348.7,396 448,296.7 405.3,254 306,353.3 206.7,254 164,296.7 263.3,396 164,495.3 206.7,538    306,438.7 405.3,538 448,495.3 348.7,396  " />
+
         </g>
         </symbol>
     </svg>
+
