@@ -5,6 +5,11 @@
     <style>
         @import url('https://fonts.googleapis.com/css?family=Raleway');
 
+        * {
+            box-sizing: border-box;
+        }
+
+
         .color-primary-0 {
             color: #F0F5EC
         }
@@ -117,7 +122,6 @@
             font-size: 1.2rem;
         }
 
-
         .section-scenario {
             margin: 2em auto;
             padding: 1em;
@@ -125,9 +129,9 @@
             break-before: page;
         }
 
-            .section-scenario li {
-                padding: .2em .1em;
-            }
+        .section-scenario li {
+            padding: .2em .1em;
+        }
 
 
         .section-givens {
@@ -185,6 +189,89 @@
         .menu-item {
             overflow-wrap: break-word;
         }
+
+
+        /* 
+            Section: Hashtag filtering 
+        */
+        /* Filtering uses switching between absolute 
+            and static positions. Filtered elements will change width 
+            unless a width is set for them. */
+        .report-body,
+        .report-body .section-scenario {
+            width: 92vw;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        input.menu-hashtag {
+            display: none;
+        }
+
+        .menu-hashtag {
+            display: inline-block;
+            width: 100%;
+            padding-bottom: 1em;
+        }
+
+        .menu-hashtag > label {
+            font-size: .9em;
+            display: inline-block;
+            text-align: center;
+            height: 2em;
+            padding: 0.36em 1em;
+            margin: 0.32em 0.2em;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 10px;
+            background: #BADA55;
+        }
+
+        .menu-hashtag.data-driven > label {
+            background: #55daa4;
+        }
+
+        .menu-hashtag.data-driven > label:hover {
+            background-color: #55da73;
+        }
+
+        .menu-hashtag > label:hover {
+            background-color: #d7da55;
+        }
+
+
+        /*toggle appearance of static hashtag filter menu when checked */
+        #filter-all:checked ~ .wrapper label[for="filter-all"],
+        #filter-success:checked ~ .wrapper label[for="filter-success"],
+        #filter-fail:checked ~ .wrapper label[for="filter-fail"] {
+            background-color: #d7da55;
+            box-shadow: inset 2px 2px 1px 0px #697a44;
+        }
+
+
+        /*Transition filtered elements into and out of view*/
+        /*Hide*/
+        #filter-all:not(:checked) ~ .wrapper .report-body > .section-scenario {
+            width: 92vw;
+            visibility: hidden;
+            position: absolute;
+            opacity: 0;
+        }
+        /*Show*/
+        #filter-success:checked ~ .wrapper .report-body > .ht-success,
+        #filter-fail:checked ~ .wrapper .report-body > .ht-fail,
+        #filter-all:checked ~ .wrapper .report-body > .section-scenario {
+            position: static;
+            transition-timing-function: ease-in;
+            transition: opacity 1.8s;
+            visibility: visible;
+            opacity: 1;
+        }
+        /* 
+            / Section
+        */
+
+
 
         .section-scenario.status-failure {
             border-left: 0.4em solid crimson;
