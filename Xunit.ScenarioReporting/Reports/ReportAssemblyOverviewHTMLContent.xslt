@@ -2,7 +2,40 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xlink="http://www.w3.org/1999/xlink">
   <xsl:output method="html" version="1.0" encoding="UTF-8" indent="yes" omit-xml-declaration="yes"/>
 
-  <xsl:template name="data-driven-filter-gui-input">
+    <xsl:template name="data-driven-toc">
+      <ul class="menu">
+        <xsl:for-each select="Assembly/Definition">
+          <xsl:sort select="Grouping"/>
+          <xsl:variable name="lcase-grouping" select="translate(translate(Grouping, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '.', '-')"></xsl:variable>          
+          <li class="menu-item">
+            <xsl:attribute name="class">
+              <xsl:text>menu-item </xsl:text>
+              <xsl:choose>
+                <xsl:when test="descendant::Failure">
+                  <xsl:text>ht-fail </xsl:text>
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:text>ht-success </xsl:text>
+                </xsl:otherwise>
+              </xsl:choose>
+              <xsl:value-of select="concat('ht-', $lcase-grouping)"/>
+            </xsl:attribute>            
+            <a href="#{generate-id(Name)}">
+              <xsl:value-of select="Name" />
+            </a>
+            <xsl:if test="descendant::Failure">
+              <xsl:text> (</xsl:text>
+              <span class="status-failure">
+                <xsl:text>Failure</xsl:text>
+              </span>
+              <xsl:text>)</xsl:text>
+            </xsl:if>
+          </li>
+        </xsl:for-each>
+      </ul>
+    </xsl:template>
+  
+    <xsl:template name="data-driven-filter-gui-input">
     <xsl:for-each select="Assembly/Definition/Grouping[not(.=preceding::*)]">
       <xsl:sort select="." />
       <xsl:variable name="lcase-grouping" select="translate(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '.', '-')"></xsl:variable>
@@ -64,6 +97,34 @@
         <xsl:text>#filter-</xsl:text>
         <xsl:value-of select="$lcase-grouping"/>
         <xsl:text>:checked ~ .wrapper .report-body > .ht-</xsl:text>
+        <xsl:value-of select="$lcase-grouping"/>
+        <xsl:if test="position() != last()">
+          <xsl:text>, </xsl:text>
+        </xsl:if>
+      </xsl:for-each>
+      <xsl:text>
+      {
+            position: static;
+            transition-timing-function: ease-in;
+            transition: opacity 1.8s;
+            visibility: visible;
+            opacity: 1;
+      }
+      </xsl:text>
+    </style>
+  </xsl:template>
+
+    <xsl:template name="data-driven-toc-transition-CSS">
+    <xsl:comment>Data-driven CSS.</xsl:comment>
+    <!--Example: #filter-coffeeshoptests:checked ~ .wrapper .report-header .menu > .ht-coffeeshoptests -->
+    <style>
+      <xsl:text>/*Transition elements - Show*/</xsl:text>
+      <xsl:for-each select="Assembly/Definition/Grouping[not(.=preceding::*)]">
+        <xsl:sort select="." />
+        <xsl:variable name="lcase-grouping" select="translate(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '.', '-')"></xsl:variable>
+        <xsl:text>#filter-</xsl:text>
+        <xsl:value-of select="$lcase-grouping"/>
+        <xsl:text>:checked ~ .wrapper .report-header .menu > .ht-</xsl:text>
         <xsl:value-of select="$lcase-grouping"/>
         <xsl:if test="position() != last()">
           <xsl:text>, </xsl:text>
@@ -243,6 +304,7 @@
 
     <xsl:call-template name="data-driven-filter-gui-css"></xsl:call-template>
     <xsl:call-template name="data-driven-filter-transition-CSS"></xsl:call-template>
+    <xsl:call-template name="data-driven-toc-transition-CSS"></xsl:call-template>
 
     <input class="menu-hashtag" type="radio" name="filter" id="filter-all" checked="checked"></input>
     <input class="menu-hashtag" type="radio" name="filter" id="filter-success"></input>
@@ -280,26 +342,10 @@
           </p>
         </xsl:if>
         <xsl:if test="$cntDefinition > 0">
-          <ul class="menu">
-            <xsl:for-each select="Assembly/Definition">
 
-              <xsl:sort select="Grouping"/>
-
-              <li class="menu-item">
-                <a href="#{generate-id(Name)}">
-                  <xsl:value-of select="Name" />
-                </a>
-                <xsl:if test="descendant::Failure">
-                  <xsl:text> (</xsl:text>
-                  <span class="status-failure">
-                    <xsl:text>Failure</xsl:text>
-                  </span>
-                  <xsl:text>)</xsl:text>
-                </xsl:if>
-              </li>
-            </xsl:for-each>
-          </ul>
-        </xsl:if>
+          <xsl:call-template name="data-driven-toc"></xsl:call-template>
+        
+          </xsl:if>
 
         <div class="menu-hashtag">
           <label for="filter-all">#all</label>
@@ -326,14 +372,14 @@
           <section class="section-scenario">
             <xsl:choose>
               <xsl:when test="descendant::Failure">
-                <xsl:attribute name="class">section-scenario status-failure ht-fail <xsl:value-of select="$hashtag-grouping"/></xsl:attribute>
+                <xsl:attribute name="class"><xsl:text>section-scenario status-failure ht-fail </xsl:text><xsl:value-of select="$hashtag-grouping"/></xsl:attribute>
                 <svg class="icon icon-lemon-2 jello animated">
                   <use xlink:href="#icon-lemon-2"></use>
                 </svg>
                 <!--::THERE IS A FAILURE::-->
               </xsl:when>
               <xsl:otherwise>
-                <xsl:attribute name="class">section-scenario ht-success <xsl:value-of select="$hashtag-grouping"/></xsl:attribute>
+                <xsl:attribute name="class"><xsl:text>section-scenario ht-success </xsl:text><xsl:value-of select="$hashtag-grouping"/></xsl:attribute>
               </xsl:otherwise>
             </xsl:choose>
 

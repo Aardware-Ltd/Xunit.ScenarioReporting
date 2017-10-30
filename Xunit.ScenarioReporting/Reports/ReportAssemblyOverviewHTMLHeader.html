@@ -91,7 +91,6 @@
         }
 
 
-
         body {
             font-family: 'Raleway', sans-serif;
             font-size: 16px;
@@ -119,7 +118,7 @@
         }
 
         .report-header {
-            font-size: 1.2rem;
+            font-size: 1.2em;
         }
 
         .section-scenario {
@@ -267,6 +266,26 @@
             visibility: visible;
             opacity: 1;
         }
+
+        /*Transition contents of TOC into and out of view*/
+        /*Hide*/
+        #filter-all:not(:checked) ~ .wrapper .report-header .menu > .menu-item {
+            width: 92vw;
+            visibility: hidden;
+            position: absolute;
+            opacity: 0;
+        }
+        /*Show*/
+        #filter-success:checked ~ .wrapper .report-header .menu > .ht-success,
+        #filter-fail:checked ~ .wrapper .report-header .menu > .ht-fail,
+        #filter-all:checked ~ .wrapper .report-header .menu > .menu-item {
+            position: static;
+            transition-timing-function: ease-in;
+            transition: opacity 1.8s;
+            visibility: visible;
+            opacity: 1;
+        }
+
         /* 
             / Section
         */
