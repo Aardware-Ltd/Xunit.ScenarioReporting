@@ -286,6 +286,13 @@
             opacity: 1;
         }
 
+        /*Toggle a clarification message when results are filtered by hashtag*/
+        #filter-all:not(:checked) ~ .wrapper .report-header .flag-filtered::after {
+            content: "(Results are currently filtered by hashtag.)";
+            display: block;
+            margin: 1em auto;
+            color: #f3ddaf;
+        }
         /* 
             / Section
         */
