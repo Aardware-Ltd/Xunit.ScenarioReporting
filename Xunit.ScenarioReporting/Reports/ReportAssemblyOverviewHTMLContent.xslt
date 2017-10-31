@@ -332,7 +332,7 @@
           <xsl:text> with the following Scenarios.</xsl:text>
         </p>
         <xsl:variable name="cntDefinition" select="count(Assembly/Definition)" />
-        <p>
+        <p class="flag-filtered">
           <xsl:value-of select="$cntDefinition" />
           <xsl:text> Scenario(s):</xsl:text>
         </p>
