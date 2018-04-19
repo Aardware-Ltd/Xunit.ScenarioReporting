@@ -1,4 +1,4 @@
-namespace Xunit.ScenarioReporting
+namespace Xunit.ScenarioReporting.Results
 {
     class EndScenario : ReportItem { }
 }
