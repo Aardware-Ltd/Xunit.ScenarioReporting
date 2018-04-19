@@ -39,6 +39,20 @@ namespace Examples
                 def.Given(new Number(a), new Number(b)).When(new Operation(OperationType.Add)).Then(new ComputedResult(result)));
         }
 
+        public static IEnumerable<object[]> TheoryMemberData()
+        {
+            yield return new object[]{6,7,13};
+            yield return new object[]{8,9,17};
+        }
+
+        [Theory]
+        [MemberData(nameof(TheoryMemberData))]
+        public async Task TheoryFromMemberData(int a, int b, int result)
+        {
+            await new ExampleScenarioRunner().Run(def =>
+                def.Given(new Number(a), new Number(b)).When(new Operation(OperationType.Add)).Then(new ComputedResult(result)));
+        }
+
         class SimpleResponder : IHandle<ReverseString> {
             private readonly Bus _bus;
 
