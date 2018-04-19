@@ -46,20 +46,20 @@ namespace Xunit.ScenarioReporting.Tests
             Assert.Equal("Custom Title", scenario.Name);
 
         }
-        public Task BasicFactScenario()
+
+        internal Task BasicFactScenario()
         {
             return new TestScenarioRunner()
                 .Run(def => def.Given(new TestGiven()).When(new TestWhen()).Then(new TestThen()));
 
         }
-
-        public Task BasicTheoryScenario(int a, int b, int result)
+        
+        internal Task BasicTheoryScenario(int a, int b, int result)
         {
             return new TestScenarioRunner()
                 .Run(def => def.Given(new TestGiven()).When(new TestWhen()).Then(new TestThen()));
         }
-
-        public Task FactScenarioWithTitle()
+        internal Task FactScenarioWithTitle()
         {
             return new TestScenarioRunner()
                 .Run(def => def.Given(new TestGiven()).When(new TestWhen()).Then(new TestThen()), "Custom Title");
@@ -105,7 +105,7 @@ namespace Xunit.ScenarioReporting.Tests
                 string methodName, ScenarioRunner runner = null, object[] parameters = null)
             {
                 parameters = parameters ?? new object[] { };
-                var methodInfo = typeof(T).GetMethod(methodName);
+                var methodInfo = typeof(T).GetMethod(methodName,BindingFlags.Instance| BindingFlags.NonPublic);
                 if(methodInfo == null) throw new InvalidOperationException($"Unknown method {methodName} on type {typeof(T)}.FullName");
                 var method = new FakeMethodInfo(Reflector.Wrap(methodInfo),
                     Reflector.Wrap(typeof(T)), 
