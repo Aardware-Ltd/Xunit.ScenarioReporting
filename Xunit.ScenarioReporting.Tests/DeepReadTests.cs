@@ -258,15 +258,15 @@ namespace Xunit.ScenarioReporting.Tests
         class ClassWithFields
         {
             private readonly string _shouldNotBeRead;
-            protected readonly string AlsoShoulNotBeRead;
+            protected readonly string AlsoShouldNotBeRead;
             public readonly string CanBeRead;
             public string ShouldAlsoBeRead;
 
-            public ClassWithFields(string shouldNotBeRead, string alsoShoulNotBeRead, string alsoShoulNotBeRead1, string shouldAlsoBeRead)
+            public ClassWithFields(string shouldNotBeRead, string alsoShouldNotBeRead, string alsoShouldNotBeRead1, string shouldAlsoBeRead)
             {
                 _shouldNotBeRead = shouldNotBeRead;
-                AlsoShoulNotBeRead = alsoShoulNotBeRead;
-                AlsoShoulNotBeRead = alsoShoulNotBeRead1;
+                AlsoShouldNotBeRead = alsoShouldNotBeRead;
+                AlsoShouldNotBeRead = alsoShouldNotBeRead1;
                 ShouldAlsoBeRead = shouldAlsoBeRead;
             }
         }
