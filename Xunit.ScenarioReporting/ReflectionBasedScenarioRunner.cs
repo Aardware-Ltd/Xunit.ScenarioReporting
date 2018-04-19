@@ -252,10 +252,11 @@ namespace Xunit.ScenarioReporting
             }
             catch (Exception ex)
             {
-                base.AddResult(Scope, "Error running scenario", ex);
+                AddResult(Scope, "Error running scenario", ex);
                 throw;
             }
             _actuals = await ActualResults();
+            StartGroup("Then");
             Verify(Definition.ExpectedException, Thrown, Definition.VerifyExceptionMessage);
             Verify(Definition.Then, _actuals);
         }
@@ -264,7 +265,7 @@ namespace Xunit.ScenarioReporting
         {
             if (expected == null) return;
             List<Detail> details = new List<Detail>();
-            Add(new Then(Scope, "Exception", details));
+            Add(new ScopedReportEntry(Scope, "Exception", details));
             if (actual == null)
             {
                 details.Add(new Mismatch(expected.GetType().FullName, expected, null));
@@ -281,15 +282,17 @@ namespace Xunit.ScenarioReporting
 
         private void RecordSetup()
         {
+            StartGroup("Given");
             foreach (var given in Definition.Given)
             {
                 var read = _reader.Read(given);
-                Add(new Given(read.Name, DetailsFromProperties(read.Properties)));
+                Add(new ReportEntry(read.Name, DetailsFromProperties(read.Properties)));
             }
+            StartGroup("When");
             if (Definition.When != null)
             {
                 var read = _reader.Read(Definition.When);
-                Add(new When(read.Name, DetailsFromProperties(read.Properties)));
+                Add(new ReportEntry(read.Name, DetailsFromProperties(read.Properties)));
             }
         }
 
@@ -334,7 +337,7 @@ namespace Xunit.ScenarioReporting
 
                 var e = expected[i];
                 var a = actual[i];
-                Add(_comparer.Compare(Scope, e, a));
+                Add(_comparer.Compare(e, a));
             }
             if (expected.Count > actual.Count)
             {
@@ -343,7 +346,7 @@ namespace Xunit.ScenarioReporting
                 {
                     missingResults.Add(new MissingResult("Type", expected[i], formatter: CommonFormatters.FromClassName));
                 }
-                Add(new Then(Scope, "Missing expected results", missingResults));
+                Add(new ReportEntry("Missing expected results", missingResults));
             }
             if (actual.Count > expected.Count)
             {
@@ -353,7 +356,7 @@ namespace Xunit.ScenarioReporting
                     extraResults.Add(new ExtraResult("Type", actual[i], formatter: CommonFormatters.FromClassName));
                 }
 
-                Add(new Then(Scope, "More results than expected", extraResults));
+                Add(new ReportEntry("More results than expected", extraResults));
             }
         }
         private ReflectionReader _reader;

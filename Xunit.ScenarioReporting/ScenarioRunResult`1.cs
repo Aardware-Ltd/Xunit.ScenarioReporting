@@ -12,7 +12,7 @@ namespace Xunit.ScenarioReporting
         /// </summary>
         /// <param name="inner">The scenario run result that this instance will wrap.</param>
         /// <param name="state">The additional state to expose for further verification</param>
-        public ScenarioRunResult(ScenarioRunResult inner, TState state) : base(inner.Title, inner.Given, inner.When, inner.Then, inner.ErrorInfo)
+        public ScenarioRunResult(ScenarioRunResult inner, TState state) : base(inner.Title, inner.Entries, inner.ErrorInfo)
         {
             State = state;
         }

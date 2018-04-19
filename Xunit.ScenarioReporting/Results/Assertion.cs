@@ -2,7 +2,7 @@ using System;
 
 namespace Xunit.ScenarioReporting.Results
 {
-    internal class Assertion : Then
+    internal class Assertion : ScopedReportEntry
     {
         public Assertion(string scope, string title) : base(scope, title, new Detail[] { })
         {

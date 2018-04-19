@@ -12,53 +12,23 @@ namespace Xunit.ScenarioReporting
     public class ScenarioRunResult
     {
         internal readonly ExceptionDispatchInfo ErrorInfo;
-        private string _scope;
 
-        internal ScenarioRunResult(string title, IReadOnlyList<Given> given, When when, IReadOnlyList<Then> then, ExceptionDispatchInfo errorInfo)
+        internal ScenarioRunResult(string title, IReadOnlyList<ReportEntry> entries, ExceptionDispatchInfo errorInfo)
         {
             ErrorInfo = errorInfo;
             Title = title;
-            Given = given;
-            When = when;
-            Then = then;
+            Entries = entries;
         }
         /// <summary>
         /// Gets or sets the scope of the scenario. Generally the scope will be set automatically
         /// by the test framework.
         /// </summary>
-        public string Scope
-        {
-            get => _scope;
-            set
-            {
-                //TODO: review this logic now we have grouping
-                _scope = value;
-                if (value == null) return;
-                if (Then.Any(x => x.Scope == null))
-                {
-                    var temp = new List<Then>();
-                    foreach (var t in Then)
-                    {
-                        var then = t;
-                        if (then.Scope == null)
-                        {
-                            then = new Then(_scope, then.Title, then.Details);
-                        }
-                        temp.Add(then);
-                    }
-                    Then = temp;
-                }
-
-            }
-        }
+        public string Scope { get; set; }
 
         internal string Grouping { get; set; }
 
         internal string Title { get; set; }
-        internal IReadOnlyList<Given> Given { get; }
-        internal When When { get; }
-
-        internal IReadOnlyList<Then> Then { get; private set; }
+       
 
         internal void ThrowIfErrored()
         {
@@ -67,20 +37,27 @@ namespace Xunit.ScenarioReporting
             if (failures.Any())
                 throw new ScenarioVerificationException(failures.ToArray());
         }
-
-        private IEnumerable<Then> Mismatches()
+        internal IReadOnlyList<ReportEntry> Entries { get; }
+        private IEnumerable<ReportEntry> Mismatches()
         {
-            return Then
+            return Entries.Traverse(ChildAccessor)
                 .Where(x => x.Details.OfType<Mismatch>().Any())
-                .Select(x => new Then(null, x.Title, x.Details.OfType<Mismatch>().ToArray()));
+                .Select(x => new ReportEntry(x.Title, x.Details.OfType<Mismatch>().ToArray()));
+        }
+
+        private static IEnumerable<ReportEntry> ChildAccessor(ReportEntry r)
+        {
+            if (r is ReportEntryGroup group)
+                return @group;
+            return Empty<ReportEntry>.ReadOnlyList;
         }
 
         private IEnumerable<Assertion> Failures()
         {
-            return Then.OfType<Assertion>().Where(x => x.Details.OfType<Failure>().Any());
+            return Entries.Traverse(ChildAccessor).OfType<Assertion>().Where(x => x.Details.OfType<Failure>().Any());
         }
 
-        internal Exception VerificationException(Then[] failures)
+        internal Exception VerificationException(ReportEntry[] failures)
         {
             return new ScenarioVerificationException(failures);
         }

@@ -2,40 +2,40 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xlink="http://www.w3.org/1999/xlink">
   <xsl:output method="html" version="1.0" encoding="UTF-8" indent="yes" omit-xml-declaration="yes"/>
 
-    <xsl:template name="data-driven-toc">
-      <ul class="menu">
-        <xsl:for-each select="Assembly/Definition">
-          <xsl:sort select="Grouping"/>
-          <xsl:variable name="lcase-grouping" select="translate(translate(Grouping, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '.', '-')"></xsl:variable>          
-          <li class="menu-item">
-            <xsl:attribute name="class">
-              <xsl:text>menu-item </xsl:text>
-              <xsl:choose>
-                <xsl:when test="descendant::Failure">
-                  <xsl:text>ht-fail </xsl:text>
-                </xsl:when>
-                <xsl:otherwise>
-                  <xsl:text>ht-success </xsl:text>
-                </xsl:otherwise>
-              </xsl:choose>
-              <xsl:value-of select="concat('ht-', $lcase-grouping)"/>
-            </xsl:attribute>            
-            <a href="#{generate-id(Name)}">
-              <xsl:value-of select="Name" />
-            </a>
-            <xsl:if test="descendant::Failure">
-              <xsl:text> (</xsl:text>
-              <span class="status-failure">
-                <xsl:text>Failure</xsl:text>
-              </span>
-              <xsl:text>)</xsl:text>
-            </xsl:if>
-          </li>
-        </xsl:for-each>
-      </ul>
-    </xsl:template>
-  
-    <xsl:template name="data-driven-filter-gui-input">
+  <xsl:template name="data-driven-toc">
+    <ul class="menu">
+      <xsl:for-each select="Assembly/Definition">
+        <xsl:sort select="Grouping"/>
+        <xsl:variable name="lcase-grouping" select="translate(translate(Grouping, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '.', '-')"></xsl:variable>
+        <li class="menu-item">
+          <xsl:attribute name="class">
+            <xsl:text>menu-item </xsl:text>
+            <xsl:choose>
+              <xsl:when test="descendant::Failure">
+                <xsl:text>ht-fail </xsl:text>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:text>ht-success </xsl:text>
+              </xsl:otherwise>
+            </xsl:choose>
+            <xsl:value-of select="concat('ht-', $lcase-grouping)"/>
+          </xsl:attribute>
+          <a href="#{generate-id(Name)}">
+            <xsl:value-of select="Name" />
+          </a>
+          <xsl:if test="descendant::Failure">
+            <xsl:text> (</xsl:text>
+            <span class="status-failure">
+              <xsl:text>Failure</xsl:text>
+            </span>
+            <xsl:text>)</xsl:text>
+          </xsl:if>
+        </li>
+      </xsl:for-each>
+    </ul>
+  </xsl:template>
+
+  <xsl:template name="data-driven-filter-gui-input">
     <xsl:for-each select="Assembly/Definition/Grouping[not(.=preceding::*)]">
       <xsl:sort select="." />
       <xsl:variable name="lcase-grouping" select="translate(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '.', '-')"></xsl:variable>
@@ -55,7 +55,8 @@
         <xsl:attribute name="for">
           <xsl:value-of select="concat('filter-', $lcase-grouping)"/>
         </xsl:attribute>
-        <xsl:text>#</xsl:text><xsl:value-of select="."/>
+        <xsl:text>#</xsl:text>
+        <xsl:value-of select="."/>
       </label>
     </xsl:for-each>
   </xsl:template>
@@ -114,7 +115,7 @@
     </style>
   </xsl:template>
 
-    <xsl:template name="data-driven-toc-transition-CSS">
+  <xsl:template name="data-driven-toc-transition-CSS">
     <xsl:comment>Data-driven CSS.</xsl:comment>
     <!--Example: #filter-coffeeshoptests:checked ~ .wrapper .report-header .menu > .ht-coffeeshoptests -->
     <style>
@@ -142,50 +143,51 @@
     </style>
   </xsl:template>
 
-    <xsl:template match="Given">
-    <div class="section-given">
-      <xsl:apply-templates select="Details"></xsl:apply-templates>
-    </div>
-    <!--section-given-->
-  </xsl:template>
+  <xsl:template match="Group">
+    <div class="section-group">
+      <h4>
+        <xsl:value-of select="@name"/>
+      </h4>
+      <xsl:variable name="cntEntries" select="count(Entry)" />
+      <xsl:choose>
+        <xsl:when test="$cntEntries = 0">
+          <p>
+            <xsl:text>[None]</xsl:text>
+          </p>
+        </xsl:when>
+        <xsl:otherwise>
 
-  <xsl:template match="When">
-    <div class="section-when">
-      <xsl:apply-templates select="Details"></xsl:apply-templates>
-    </div>
-    <!--section-when-->
-  </xsl:template>
+          <xsl:apply-templates select ="Entry/Details"></xsl:apply-templates>
 
-  <xsl:template match="Then">
-    <div class="section-then">
-      <xsl:apply-templates select="Details"></xsl:apply-templates>
+        </xsl:otherwise>
+      </xsl:choose>
     </div>
-    <!--section-then-->
   </xsl:template>
-
   <xsl:template match="Details">
     <xsl:choose>
       <xsl:when test="name(..) = 'Details'">
-        <xsl:if test="count(preceding-sibling::Details) = 0">
+        <!--<xsl:if test="count(preceding-sibling::Details) = 0">
           <div class="arrow">&#160;</div>
-          <!--Needs content to prevent any following markup being insterted withing this div. Reason unknown.-->
-        </xsl:if>
-        <div class="nested-child">
+          -->
+        <!--Needs content to prevent any following markup being insterted withing this div. Reason unknown.-->
+        <!--
+        </xsl:if>-->
 
-          <p>
-            <xsl:value-of select="Title"/>
-          </p>
-          <xsl:call-template name="WriteDetails" />
-
-        </div>
+        <li class="tick">
+          <code><xsl:value-of select="Title"/>:</code>
+          <ul>
+            <xsl:call-template name="WriteDetails" />
+          </ul>
+        </li>
       </xsl:when>
       <xsl:otherwise>
 
         <p>
           <xsl:value-of select="Title"/>
         </p>
-
-        <xsl:call-template name="WriteDetails" />
+        <ul>
+          <xsl:call-template name="WriteDetails" />
+        </ul>
       </xsl:otherwise>
     </xsl:choose>
 
@@ -220,14 +222,13 @@
 
   <xsl:template match="Detail">
     <xsl:if test="not(descendant::Failure)">
-      <p>
-        <xsl:text>with </xsl:text>
+      <li class="tick">
         <code>
           <xsl:value-of select="Name"/>
         </code>
-        <xsl:text> </xsl:text>
+        <xsl:text> : </xsl:text>
         <xsl:value-of select="Value"/>
-      </p>
+      </li>
     </xsl:if>
     <xsl:if test="descendant::Failure">
       <xsl:apply-templates select ="Failure"></xsl:apply-templates>
@@ -235,53 +236,44 @@
   </xsl:template>
 
   <xsl:template match="Mismatch">
-    <div class="status-failure">
-      <div class="accordion error">
-        <div class="tab">
-          <input id="tab-fail-{generate-id(current())}-{position()}" type="checkbox" name="tabs" />
-          <label for="tab-fail-{generate-id(current())}-{position()}">
-            Failure: <span class="fail-message">
-              <xsl:value-of select="Name"/> Mismatch
-            </span>
-          </label>
-          <div class="tab-content">
-            <ul>
-              <li>
-                <xsl:text>Expected: </xsl:text>
-                <xsl:value-of select="Expected/Value"/>
-              </li>
-              <li>
-                <xsl:text>Actual: </xsl:text>
-                <xsl:value-of select="Actual/Value"/>
-              </li>
-            </ul>
-          </div>
-          <!--tab-content -->
-          <svg class="icon icon-error-x">
-            <use xlink:href="#icon-error-x"></use>
-          </svg>
-        </div>
-        <!--tab -->
-      </div>
-      <!--accordion -->
-    </div>
-    <!--status-failure -->
+    <li class="fail-message">
+      <code>
+        <xsl:value-of select="Name"/>
+      </code>
+      <xsl:text> : </xsl:text>
+      <ul>
+        <li>
+          <code>
+            <xsl:text>Expected</xsl:text>
+          </code>
+          <xsl:text> : </xsl:text>
+          <xsl:value-of select="Expected/Value"/>
+        </li>
+        <li>
+          <code>
+            <xsl:text>Actual</xsl:text>
+          </code>
+          <xsl:text>:</xsl:text>
+          <xsl:value-of select="Actual/Value"/>
+        </li>
+      </ul>
+    </li>
   </xsl:template>
 
   <xsl:template match="Exception">
+    <li class="fail-message">
+      <code>
+        <xsl:value-of select="Type"/>
+      </code>
+      <xsl:text> : </xsl:text>
+      <xsl:value-of select="Name"/>
+    
     <div class="status-failure">
       <div class="accordion error">
         <div class="tab">
           <input id="tab-fail-{generate-id(current())}-{position()}" type="checkbox" name="tabs" />
           <label for="tab-fail-{generate-id(current())}-{position()}">
-            <xsl:text>Failure: </xsl:text>
-            <span class="fail-message">
-              <code>
-                <xsl:value-of select="Name"/>
-              </code>
-              <xsl:text> </xsl:text>
-              <xsl:value-of select="Type"/>
-            </span>
+            <xsl:text>Details...</xsl:text>
           </label>
           <div class="tab-content">
             <p>
@@ -289,15 +281,13 @@
             </p>
           </div>
           <!--tab-content -->
-          <svg class="icon icon-error-x">
-            <use xlink:href="#icon-error-x"></use>
-          </svg>
         </div>
         <!--tab -->
       </div>
       <!--accordion -->
     </div>
     <!--status-failure -->
+    </li>
   </xsl:template>
 
   <xsl:template match="/">
@@ -344,8 +334,8 @@
         <xsl:if test="$cntDefinition > 0">
 
           <xsl:call-template name="data-driven-toc"></xsl:call-template>
-        
-          </xsl:if>
+
+        </xsl:if>
 
         <div class="menu-hashtag">
           <label for="filter-all">#all</label>
@@ -354,10 +344,10 @@
         </div>
         <div class="menu-hashtag data-driven">
           <xsl:call-template name="data-driven-filter-gui-label"></xsl:call-template>
-        </div>        
-        
-        
-        
+        </div>
+
+
+
       </div>
       <!--report-header-->
 
@@ -372,14 +362,20 @@
           <section class="section-scenario">
             <xsl:choose>
               <xsl:when test="descendant::Failure">
-                <xsl:attribute name="class"><xsl:text>section-scenario status-failure ht-fail </xsl:text><xsl:value-of select="$hashtag-grouping"/></xsl:attribute>
+                <xsl:attribute name="class">
+                  <xsl:text>section-scenario status-failure ht-fail </xsl:text>
+                  <xsl:value-of select="$hashtag-grouping"/>
+                </xsl:attribute>
                 <svg class="icon icon-lemon-2 jello animated">
                   <use xlink:href="#icon-lemon-2"></use>
                 </svg>
                 <!--::THERE IS A FAILURE::-->
               </xsl:when>
               <xsl:otherwise>
-                <xsl:attribute name="class"><xsl:text>section-scenario ht-success </xsl:text><xsl:value-of select="$hashtag-grouping"/></xsl:attribute>
+                <xsl:attribute name="class">
+                  <xsl:text>section-scenario ht-success </xsl:text>
+                  <xsl:value-of select="$hashtag-grouping"/>
+                </xsl:attribute>
               </xsl:otherwise>
             </xsl:choose>
 
@@ -394,62 +390,8 @@
               <xsl:text>Nom de guerre: </xsl:text>
               <xsl:value-of select="NDG"/>
             </p>
-            <div class="section-givens">
-              <h4>
-                <xsl:text>Given</xsl:text>
-              </h4>
-              <xsl:variable name="cntGivens" select="count(Given)" />
-              <xsl:choose>
-                <xsl:when test="$cntGivens = 0">
-                  <p>
-                    <xsl:text>[There are no Givens]</xsl:text>
-                  </p>
-                </xsl:when>
-                <xsl:otherwise>
 
-                  <xsl:apply-templates select ="Given"></xsl:apply-templates>
-
-                </xsl:otherwise>
-              </xsl:choose>
-            </div>
-            <!--section-givens-->
-
-            <div class="section-whens">
-              <h4>
-                <xsl:text>When</xsl:text>
-              </h4>
-              <xsl:variable name="cntWhen" select="count(When)" />
-              <xsl:choose>
-                <xsl:when test="$cntWhen = 0">
-                  <p>
-                    <xsl:text>[There is no When]</xsl:text>
-                  </p>
-                  <!--There is no spoon-->
-                </xsl:when>
-                <xsl:otherwise>
-
-                  <xsl:apply-templates select ="When"></xsl:apply-templates>
-
-                </xsl:otherwise>
-              </xsl:choose>
-            </div>
-            <!--section-whens-->
-
-            <div class="section-thens">
-              <h4>Then</h4>
-              <xsl:variable name="cntThen" select="count(Then)" />
-              <xsl:choose>
-                <xsl:when test="$cntThen = 0">
-                  <p>[There are no Thens]</p>
-                </xsl:when>
-                <xsl:otherwise>
-
-                  <xsl:apply-templates select ="Then"></xsl:apply-templates>
-
-                </xsl:otherwise>
-              </xsl:choose>
-            </div>
-            <!--section-thens-->
+            <xsl:apply-templates select="Group" />
 
             <div class="accordion tech">
               <div class="tab">
@@ -467,10 +409,10 @@
                       </xsl:for-each>
                     </ul>
                   </xsl:if>
-                  <xsl:if test="count(Then/Scope) > 0">
+                  <xsl:if test="count(Entry/Scope) > 0">
                     <p>Then Scope(s)</p>
                     <ul>
-                      <xsl:for-each select="Then/Scope">
+                      <xsl:for-each select="Entry/Scope">
                         <li>
                           <xsl:value-of select="."/>
                         </li>

@@ -21,8 +21,7 @@ namespace Xunit.ScenarioReporting.Tests
         [Fact()]
         public void CanCompareRawPrimitive()
         {
-            var then = _comparer.Compare("scope", "test", "test");
-            Assert.Equal("scope", then.Scope);
+            var then = _comparer.Compare("test", "test");
             Assert.Equal(nameof(String), then.Title);
             Assert.Equal(1, then.Details.Count);
             var details = Assert.IsType<Match>(then.Details[0]);
@@ -33,9 +32,8 @@ namespace Xunit.ScenarioReporting.Tests
         public void CanCompareSimpleTypes()
         {
             var simpleType = new SimpleType(42, "Meaning of life");
-            var then = _comparer.Compare("scope", simpleType,
+            var then = _comparer.Compare(simpleType,
                 simpleType);
-            Assert.Equal("scope", then.Scope);
             Assert.Equal(nameof(SimpleType), then.Title);
             Assert.Equal(2, then.Details.Count);
             var detail0 = Assert.IsType<Match>(then.Details[0]);
@@ -48,8 +46,7 @@ namespace Xunit.ScenarioReporting.Tests
         public void CanCompareComplexTypes()
         {
             var complexType = new ComplexType(new SimpleType(2, "Two"), new SimpleType(40, "Forty"));
-            var then = _comparer.Compare("scope",
-                complexType, complexType);
+            var then = _comparer.Compare(complexType, complexType);
             Assert.Equal(2, then.Details.Count);
         }
         

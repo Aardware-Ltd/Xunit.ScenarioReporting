@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
@@ -79,12 +80,10 @@ namespace Xunit.ScenarioReporting
             {
                 var writer = new DelayedBatchWriter(_queue);
                 writer.Write(new StartScenario(result.Title ?? result.Scope, result.Scope, result.Grouping));
-                foreach (var given in result.Given)
-                    writer.Write(given);
-                if(result.When != null)
-                    writer.Write(result.When);
-                foreach (var then in result.Then)
-                    writer.Write(then);
+                foreach (var entry in result.Entries)
+                {
+                    writer.Write(entry);
+                }
                 writer.Complete();
             }
             catch(Exception ex)
@@ -119,27 +118,9 @@ namespace Xunit.ScenarioReporting
                 });
             }
             
-            public void Write(StartScenario start)
+            public void Write(ReportItem item)
             {
-                _batch.Enqueue(start);
-            }
-
-            public void Write(Given given)
-            {
-                if(given != null)
-                    _batch.Enqueue(given);
-            }
-
-            public void Write(When when)
-            {
-                if (when != null)
-                    _batch.Enqueue(when);
-            }
-
-            public void Write(Then then)
-            {
-                if(then != null)
-                    _batch.Enqueue(then);
+                _batch.Enqueue(item);
             }
         }
     }

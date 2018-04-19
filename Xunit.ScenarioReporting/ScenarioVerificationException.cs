@@ -11,12 +11,12 @@ namespace Xunit.ScenarioReporting
     /// </summary>
     public class ScenarioVerificationException : Exception
     {
-        internal ScenarioVerificationException(Then[] failures): base(FormatFailures(failures))
+        internal ScenarioVerificationException(ReportEntry[] failures): base(FormatFailures(failures))
         {
             
         }
 
-        static string FormatFailures(IReadOnlyList<Then> failures)
+        static string FormatFailures(IReadOnlyList<ReportEntry> failures)
         {
             var sb = new StringBuilder();
             bool first = true;

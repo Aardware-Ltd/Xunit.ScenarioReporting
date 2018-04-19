@@ -11,7 +11,6 @@ namespace Xunit.ScenarioReporting.Results
         public string Format { get; }
         public Func<object, string> Formatter { get; }
         public IReadOnlyList<Detail> Children { get; }
-        private static readonly IReadOnlyList<Detail> EmptyChildren = new Detail[] { };
         public Detail(string name, object value, bool displayByDefault, string format = null, Func<object, string> formatter = null)
         {
             Name = name;
@@ -19,14 +18,14 @@ namespace Xunit.ScenarioReporting.Results
             DisplayByDefault = displayByDefault;
             Format = format;
             Formatter = formatter;
-            Children = EmptyChildren;
+            Children = Empty<Detail>.ReadOnlyList;
         }
 
         public Detail(IReadOnlyList<Detail> children, bool displayByDefault, string name)
         {
             Name = name;
             DisplayByDefault = displayByDefault;
-            Children = children ?? EmptyChildren;
+            Children = children ?? Empty<Detail>.ReadOnlyList;
         }
     }
 }

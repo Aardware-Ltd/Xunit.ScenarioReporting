@@ -197,30 +197,40 @@ namespace Xunit.ScenarioReporting
             await writer.WriteElementStringAsync(null, XmlTagGrouping, null, start.Grouping);
         }
         
-        private async Task Given(XmlWriter writer, Given given)
+        private async Task Group(XmlWriter writer, ReportEntryGroup group)
         {
-            await writer.WriteStartElementAsync(null, XmlTagGiven, null);
-            await WriteContainerDetail(writer, true, given.Title, given.Details);
+            await writer.WriteStartElementAsync(null, "Group", null);
+            await writer.WriteAttributeStringAsync(null, "name", null, group.Title);
+            await WriteGroupEntries(writer, group);
             await writer.WriteEndElementAsync();
         }
 
-        private async Task Then(XmlWriter writer, Then then)
+        private async Task WriteGroupEntries(XmlWriter writer, IReadOnlyList<ReportEntry> entries)
         {
-            await writer.WriteStartElementAsync(null, XmlTagThen, null);
-            await WriteContainerDetail(writer,true, then.Title, then.Details);
-            await writer.WriteElementStringAsync(null, XmlTagScope, null, then.Scope);
-            await writer.WriteEndElementAsync();
+            foreach (var entry in entries)
+            {
+                if (entry is ReportEntryGroup group)
+                {
+                    await Group(writer, group);
+                    continue;
+                }
+
+                await Entry(writer, entry);
+            }
         }
 
-        private async Task When(XmlWriter writer, When when)
+        private async Task Entry(XmlWriter writer, ReportEntry entry)
         {
-            await writer.WriteStartElementAsync(null, XmlTagWhen, null);
-            await WriteContainerDetail(writer, true, when.Title, when.Details);
+            await writer.WriteStartElementAsync(null, "Entry", null);
+            await WriteContainerDetail(writer, true, entry.Title, entry.Details);
+            if (entry is ScopedReportEntry scoped)
+                await writer.WriteElementStringAsync(null, XmlTagScope, null, scoped.Scope);
             await writer.WriteEndElementAsync();
         }
 
         private async Task WriteContainerDetail(XmlWriter writer, bool displayByDefault, string title, IReadOnlyList<Detail> children)
         {
+            //TODO: need to have some way of working out if we are displaying this due to errors or not
             await writer.WriteStartElementAsync(null, XmlTagDetails, null);
             await writer.WriteAttributeStringAsync(null, XmlAttributeShowDetail, null, displayByDefault.ToString());
             await writer.WriteElementStringAsync(null, XmlTagTitle, null, title);
@@ -261,8 +271,7 @@ namespace Xunit.ScenarioReporting
                 await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
                 await writer.WriteElementStringAsync(null, XmlTagValue, null, detail.Formatter(detail.Value));
 
-                var mismatch = detail as Mismatch;
-                if (mismatch != null)
+                if (detail is Mismatch mismatch)
                 {
                     await WriteFailureMismatch(writer, mismatch.Name, mismatch.Formatter(mismatch.Value),
                         mismatch.Formatter(mismatch.Actual));
@@ -272,8 +281,7 @@ namespace Xunit.ScenarioReporting
             {
                 await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
                 await writer.WriteElementStringAsync(null, XmlTagValue, null, string.Format(detail.Format, detail.Value));
-                var mismatch = detail as Mismatch;
-                if (mismatch != null)
+                if (detail is Mismatch mismatch)
                 {
                     await WriteFailureMismatch(writer, mismatch.Name, string.Format(detail.Format, mismatch.Value),
                         string.Format(detail.Format, mismatch.Actual));
@@ -283,8 +291,7 @@ namespace Xunit.ScenarioReporting
             {
                 await writer.WriteElementStringAsync(null, XmlTagName, null, detail.Name);
                 await writer.WriteElementStringAsync(null, XmlTagValue, null, $"{detail.Value}");
-                var mismatch = detail as Mismatch;
-                if (mismatch != null)
+                if (detail is Mismatch mismatch)
                 {
                     await WriteFailureMismatch(writer, mismatch.Name, $"{mismatch.Value}", mismatch.Actual?.ToString());
                 }
@@ -357,12 +364,10 @@ namespace Xunit.ScenarioReporting
                     return StartScenario(_output, startScenario);
                 case EndScenario endScenario:
                     return EndScenario(_output, endScenario);
-                case Given given:
-                    return Given(_output, given);
-                case When @when:
-                    return When(_output, @when);
-                case Then then:
-                    return Then(_output, then);
+                case ReportEntryGroup group:
+                    return Group(_output, group);
+                case ReportEntry entry:
+                    return Entry(_output, entry);
                 default:
                     throw new InvalidOperationException($"Unsupported report item of type {item.GetType().FullName}");
             }

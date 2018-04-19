@@ -21,7 +21,7 @@ namespace Xunit.ScenarioReporting.Tests
             var scenario = Assert.Single(output.Items.OfType<StartScenario>());
             Assert.Contains(nameof(BasicFactScenario), scenario.Name);
 
-            Assert.All(output.Items.OfType<Then>(), then => Assert.Contains(nameof(BasicFactScenario), then.Scope));
+            Assert.All(output.Items.OfType<ScopedReportEntry>(), then => Assert.Contains(nameof(BasicFactScenario), then.Scope));
         }
 
         [Fact]

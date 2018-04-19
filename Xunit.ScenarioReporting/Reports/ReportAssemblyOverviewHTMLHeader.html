@@ -133,28 +133,14 @@
         }
 
 
-        .section-givens {
-            margin: 1em 3em 1em 1em;
+        .section-group {
+            margin: 1em 1em 1em 1em;
             padding: 1em;
             background-color: #C8D2BE;
         }
 
-        .section-whens {
-            margin: 1em 2em 1em 2em;
-            padding: 1em;
-            background-color: #DFE7D6;
-        }
-
-        .section-thens {
-            margin: 1em 1em 1em 3em;
-            padding: 1em;
-            background-color: #DDEECB;
-        }
-
         .section-scenario,
-        .section-givens,
-        .section-whens,
-        .section-thens {
+        .section-group {
             border-radius: 5px;
             box-shadow: 0 10px 15px -10px #777;
             overflow-wrap: break-word;
@@ -173,6 +159,7 @@
         .nested-child {
             position-relative;
             padding-left: 4em;
+            border: 0.1em solid #555555;
         }
 
         .assembly-name,
@@ -303,7 +290,7 @@
             border-left: 0.4em solid crimson;
         }
 
-        .section-then .status-failure {
+        .group .status-failure {
             border-left: 0.2em solid crimson;
             padding-left: 0.5em;
         }
@@ -322,7 +309,8 @@
         }
 
         .icon-error-x {
-            font-size: 3.2em;
+            display: inline;
+            font-size: 1.2em;
         }
 
 
@@ -544,53 +532,22 @@
             font-weight: normal;
         }
 
+        li {
+            list-style-type: none;
 
-        /*#084978;*/
-        .arrow {
-            margin: 1em;
-            position: relative;
-            width: 0;
-            height: 0;
-            border-top: 1em solid transparent;
-            border-right: 1em solid cadetblue;
-            -webkit-transform: rotate(320deg); /*220deg*/
-            -moz-transform: rotate(320deg);
-            -ms-transform: rotate(320deg);
-            -o-transform: rotate(320deg);
-            transform: rotate(320deg);
         }
 
-            .arrow:after {
-                content: "";
-                position: absolute;
-                border: 0 solid transparent;
-                border-top: 0.5em solid cadetblue;
-                border-radius: 0 2.5em 0 0;
-                top: -2.5em;
-                left: -0.2em;
-                width: 1.5em;
-                height: 1.5em;
-                -webkit-transform: rotate(225deg); /*45deg*/
-                -moz-transform: rotate(225deg);
-                -ms-transform: rotate(225deg);
-                -o-transform: rotate(225deg);
-                transform: rotate(225deg);
-            }
-
-        /*Customisations to show arrow in first child*/
-        .arrow {
-            float: left;
-            margin-left: 1.8em;
-            margin-top: 0.6em;
+        li.tick:before {
+            content: "\2713";
+            color: darkgreen;
         }
-        /*First nested child customisations. Note: first-of-type does not work on class so instead adjust all children and then correct all but the first one.*/
-        .nested-child {
-            margin-top: 1.4em;
+        li.fail-message {
+            color: crimson;
         }
-
-            .nested-child ~ .nested-child {
-                margin-top: initial;
-            }
+        li.fail-message:before {
+            content: "\2717";
+            color: crimson;
+        }
     </style>
 
 </head>

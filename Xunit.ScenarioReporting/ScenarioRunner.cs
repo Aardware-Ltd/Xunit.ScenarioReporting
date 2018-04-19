@@ -14,38 +14,31 @@ namespace Xunit.ScenarioReporting
     public abstract class ScenarioRunner
     {
         private bool _runCompleted;
-        
-        readonly List<Given> _givens;
-        private When _when;
-        readonly List<Then> _thens;
+
+        readonly List<ReportEntry> _entries;
+        private List<ReportEntry> _currentGroup;
 
         /// <summary>
         /// Initializes a new instance of the scenario runner
         /// </summary>
         protected ScenarioRunner()
         {
-            _givens = new List<Given>();
-            _thens = new List<Then>();
+            _entries = new List<ReportEntry>();
         }
 
         internal void AddResult(string scope, string name, Exception e = null)
         {
-            _thens.Add(e != null ? new Assertion(scope, name, e) : new Assertion(scope, name));
-        }
-        
-        internal void Add(Given given)
-        {
-            _givens.Add(given);
+            Add(e != null ? new Assertion(scope, name, e) : new Assertion(scope, name));
         }
 
-        internal void Add(When when)
+        internal void Add(ReportEntry entry)
         {
-            _when = when;
+            _currentGroup.Add(entry);
         }
 
-        internal void Add(Then then)
+    internal void StartGroup(string name)
         {
-            _thens.Add(then);
+            _entries.Add(new ReportEntryGroup(name, _currentGroup = new List<ReportEntry>()));
         }
         
         internal async Task Execute()
@@ -67,9 +60,7 @@ namespace Xunit.ScenarioReporting
                 {
                     _error = ExceptionDispatchInfo.Capture(ex);
                 }
-                if (_when == null)
-                    AddResult(null, "Incomplete scenario", new Exception("No when provided"));
-                _result = new ScenarioRunResult(Title, _givens, _when ?? NullWhen, _thens, _error) {Scope = Scope, Grouping = Group};
+                _result = new ScenarioRunResult(Title, _entries, _error) {Scope = Scope, Grouping = Group};
             }
         }
 
@@ -79,7 +70,8 @@ namespace Xunit.ScenarioReporting
             report.Report(_result);
             _result.ThrowIfErrored();
         }
-        static readonly When NullWhen = new When("No when provided", new Detail[]{});
+        
+        static readonly ReportEntry NullWhen = new ReportEntry("None", new Detail[]{new MissingStep("When"), });
         private ExceptionDispatchInfo _error;
         private ScenarioRunResult _result;
 

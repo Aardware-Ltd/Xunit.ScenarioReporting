@@ -251,7 +251,7 @@ namespace Xunit.ScenarioReporting
             _reader = reader;
             _comparers = comparers;
         }
-        public Then Compare(string scope, object expected, object actual)
+        public ReportEntry Compare(object expected, object actual)
         {
             var expectedStructure = _reader.Read(expected);
             var actualStructure = _reader.Read(actual);
@@ -266,9 +266,9 @@ namespace Xunit.ScenarioReporting
             actualStack.Push(actualStructure);
             Compare(expectedStack, actualStack);
             if (details[0].Children.Count > 0)
-                return new Then(scope, expectedStructure.Name, details.First().Children);
+                return new ReportEntry(expectedStructure.Name, details.First().Children);
             //Compared a primitive type
-            return new Then(scope, expectedStructure.Name, details);
+            return new ReportEntry(expectedStructure.Name, details);
         }
 
         void Compare(Stack<ExpectedReadResult> pendingExpected, Stack<ObjectPropertyDefinition> pendingActual)
