@@ -109,7 +109,7 @@ namespace Xunit.ScenarioReporting
                             };
                         }
                     }
-                    foreach (var p in current.Type.GetProperties().Reverse())
+                    foreach (var p in current.Type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Reverse())
                     {
                         if (_skipProperty(current.Type, p.Name) || _skipProperty(p.DeclaringType, p.Name)) continue;
                         value = p.GetValue(current.Value);
