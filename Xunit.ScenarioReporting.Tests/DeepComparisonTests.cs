@@ -76,8 +76,19 @@ namespace Xunit.ScenarioReporting.Tests
                 Second = second;
             }
         }
-}
 
-    
+        struct TestStruct
+        {
+            public static readonly TestStruct EmptyField = new TestStruct();
 
+            public static TestStruct Empty { get; } = new TestStruct();
+        }
+
+        [Fact]
+        public void CanCompareObjectWithStaticProperty()
+        {
+            // Ensure this does not hang on infinite recursion of field/property
+            _comparer.Compare("scope", new TestStruct(), new TestStruct());
+        }
+    }
 }
