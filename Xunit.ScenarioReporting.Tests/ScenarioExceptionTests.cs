@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit.Sdk;
 
 namespace Xunit.ScenarioReporting.Tests
 {
@@ -40,6 +41,14 @@ namespace Xunit.ScenarioReporting.Tests
             var ex = await Record.ExceptionAsync(() => runner.Run(def => def.Given().When(new object()).Then(new object())));
             Assert.IsType<ScenarioVerificationException>(ex);
         }
+
+	    [Fact]
+	    public Task ShouldNotThrowWhenRunningDefaultRunner()
+	    {
+		    var testScenarioRunner = new TestScenarioRunner();
+		    testScenarioRunner.DelayReporting = false;
+		    return testScenarioRunner.Run(def => def.Given().When(new object()).Then());
+	    }
 
         class TestScenarioRunner : ReflectionBasedScenarioRunner<object, object, object>
         {

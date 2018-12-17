@@ -76,7 +76,11 @@ namespace Xunit.ScenarioReporting
         internal async Task Complete(ScenarioReport report)
         {
             await ExecuteWithoutThrowing();
-            report.Report(_result);
+	        if (report == null)
+	        {
+		        Trace.WriteLine($"no report found, check that the test assembly has been set in the assembly: \r\n\t[assembly: TestFramework(Xunit.ScenarioReporting.Constants.Framework, Xunit.ScenarioReporting.Constants.AssemblyName)] ");
+	        }
+	        report?.Report(_result);
             _result.ThrowIfErrored();
         }
         static readonly When NullWhen = new When("No when provided", new Detail[]{});

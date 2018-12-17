@@ -23,7 +23,7 @@ namespace Xunit.ScenarioReporting
             testMethod, testMethodArguments, beforeAfterAttributes, aggregator, cancellationTokenSource)
         {
             _scenarioRunner = scenarioRunner;
-            _report = report;
+            _report = report ?? throw new ArgumentNullException(nameof(report));
             _openVerify = GetType().GetMethod(nameof(VerifyAndReport), BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
