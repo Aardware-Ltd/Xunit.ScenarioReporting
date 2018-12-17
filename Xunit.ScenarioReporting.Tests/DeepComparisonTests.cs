@@ -9,13 +9,13 @@ namespace Xunit.ScenarioReporting.Tests
 {
     public class DeepComparisonTests
     {
-        private readonly ReflectionComparerer _comparer;
+        private readonly ReflectionComparer _comparer;
 
         public DeepComparisonTests()
         {
             var reader = new ReflectionReader(new Dictionary<Type, string>(), new Dictionary<Type, Func<object, string>>(), new List<MemberInfo>(), new Dictionary<Type, Func<string, bool, object, ObjectPropertyDefinition>>(), 
                 (_, __) => false, _ => false);
-            _comparer = new ReflectionComparerer(reader, new Dictionary<Type, object>());
+            _comparer = new ReflectionComparer(reader, new Dictionary<Type, object>());
         }
 
         [Fact()]

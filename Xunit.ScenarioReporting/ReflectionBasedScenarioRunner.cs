@@ -236,7 +236,7 @@ namespace Xunit.ScenarioReporting
                 var properties = IgnoredByType(type);
                 return properties.Contains(property);
             }, t => SkipTypes.Contains(t));
-            _comparer = new ReflectionComparerer(_reader, Comparers);
+            _comparer = new ReflectionComparer(_reader, Comparers);
             RecordSetup();
             try
             {
@@ -360,7 +360,7 @@ namespace Xunit.ScenarioReporting
             }
         }
         private ReflectionReader _reader;
-        private ReflectionComparerer _comparer;
+        private ReflectionComparer _comparer;
         
     }
 
@@ -447,4 +447,5 @@ namespace Xunit.ScenarioReporting
         /// <param name="verifyMessage">If true then then the message of the exception as well as the type will be checked. If false, only the type of exception thrown will be checked.</param>
         void Throws<T>(T exception, bool verifyMessage = true) where T : Exception;
     }
+
 }

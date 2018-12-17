@@ -241,12 +241,12 @@ namespace Xunit.ScenarioReporting
 
     }
 
-    internal class ReflectionComparerer
+    internal class ReflectionComparer
     {
         private readonly ReflectionReader _reader;
         private readonly IReadOnlyDictionary<Type, object> _comparers;
 
-        public ReflectionComparerer(ReflectionReader reader, IReadOnlyDictionary<Type, object> comparers)
+        public ReflectionComparer(ReflectionReader reader, IReadOnlyDictionary<Type, object> comparers)
         {
             _reader = reader;
             _comparers = comparers;
